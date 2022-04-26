@@ -191,6 +191,14 @@ export default function({onRfMount, setMenuItem, onRefreshBalance, onItheumAccou
             <Button isLoading={faucetWorking} colorScheme="teal" variant="outline" onClick={web3_tokenFaucet}>Send me 50 {CHAIN_TOKEN_SYMBOL(chainMeta.networkId)}</Button>
           </Stack>
         </WrapItem>
+
+        <WrapItem maxW="sm" borderWidth="1px" borderRadius="lg">
+          <Stack p="5" h="360" bgImage="assets/my-nfmeid.png" bgSize="cover" bgPosition="top" borderRadius="lg">
+            <Heading size="md">NFMe ID Avatar</Heading>                  
+            <Spacer />
+            <Button colorScheme="teal" variant="outline" onClick={() => setMenuItem(14)}>Mint & Own NFT</Button>
+          </Stack>
+        </WrapItem>
       </Wrap>
 
       <Stack p="5" h="360">

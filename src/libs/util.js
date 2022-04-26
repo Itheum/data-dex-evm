@@ -199,6 +199,7 @@ export const MENU = {
   NFTALL: 11,
   COALITIONALL: 12,
   DATAPROOFS: 13,
+  NFMEID: 14,
 };
 
 export const CHAINS = {

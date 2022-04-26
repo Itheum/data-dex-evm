@@ -17,7 +17,7 @@ export default function() {
   return (
     <Stack spacing={5}>      
       <Flex align="top" spacing={10}>
-        <Box maxW="sm" borderWidth="1px" p="10" m="auto" borderRadius="lg" w="90%" maxWidth="initial">
+        <Box maxW="sm" borderWidth="1px" p="10" m="auto" borderRadius="lg" maxWidth="initial">
           <Center flexDirection="column">
             <Heading size="lg">Data Vault <Badge variant="outline" colorScheme="teal">Coming Soon</Badge></Heading>
             <Image src={dataVaultIcon} boxSize="150px" m={5} borderRadius="md" />

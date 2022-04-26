@@ -134,3 +134,5 @@ yarn-error.log*
 NOTES.md
 
 /bin
+/public/assets/
+/public/libs/

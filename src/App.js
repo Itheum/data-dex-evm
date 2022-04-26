@@ -21,6 +21,7 @@ import PersonalDataProofs from './PersonalDataProofs';
 import ShortAddress from './UtilComps/ShortAddress';
 import Tools from './Tools';
 import ChainTransactions from './ChainTransactions';
+import NFMeID from './DataMetaverse/NFMeID';
 import DataVault from './DataVault';
 import DataNFTs from './DataNFTs';
 import MyDataNFTs from './DataNFT/MyDataNFTs';
@@ -319,6 +320,18 @@ function App() {
 
                     <AccordionItem>
                       <AccordionButton>
+                        <Button flex="1" colorScheme="teal" variant="outline">Data Metaverse</Button>
+                        <AccordionIcon />
+                      </AccordionButton>
+                      <AccordionPanel>
+                        <Stack direction="column" spacing={4} align="left" mt="2" w={menuButtonW}>
+                          <Button colorScheme="teal" isDisabled={menuItem === MENU.NFMEID} onClick={() => (setMenuItem(MENU.NFMEID))}>NFMe ID</Button>
+                        </Stack>
+                      </AccordionPanel>
+                    
+                    </AccordionItem>
+                    <AccordionItem>
+                      <AccordionButton>
                         <Button flex="1" colorScheme="teal" variant="outline">Labs</Button>
                         <AccordionIcon />
                       </AccordionButton>
@@ -349,6 +362,7 @@ function App() {
                 {menuItem === MENU.DATAPROOFS && <PersonalDataProofs />}
                 {menuItem === MENU.TX && <ChainTransactions />}
                 {menuItem === MENU.VAULT && <DataVault />}
+                {menuItem === MENU.NFMEID && <NFMeID />}
                 
                 {menuItem === MENU.NFT && <DataNFTs setMenuItem={setMenuItem} />}
                 {menuItem === MENU.NFTMINE && <MyDataNFTs />}
@@ -408,7 +422,7 @@ function App() {
 
             <Text textAlign="center" fontSize="sm">Supported Chains</Text>
             
-            <Flex wrap={["wrap", "nowrap"]} direction="row" justify={["start", "space-around"]} w={["300px", "500px"]} w={["100%"]}>
+            <Flex wrap={["wrap", "nowrap"]} direction="row" justify={["start", "space-around"]} w={["300px", "500px"]}>
               <Tooltip label="Elrond - Coming soon...">
                 <Image src={chainElrond} boxSize="40px" opacity=".3" borderRadius="lg" m="5px" />
               </Tooltip>
