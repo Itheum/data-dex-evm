@@ -107,6 +107,12 @@ function App({
     if (_chainMeta?.networkId) {
       // const networkId = mxEnvironment === "mainnet" ? "E1" : "ED";
 
+      // if the user has been on landing page and login
+      if (_chainMeta?.isEVMAuthenticated && pathname == "/") {
+        setMenuItem(PATHS["home"]?.[0] as number);
+        navigate("home");
+      }
+
       setChain(CHAINS[_chainMeta?.networkId] || "Unknown chain");
 
       if (!SUPPORTED_CHAINS.includes(_chainMeta?.networkId)) {
