@@ -1409,7 +1409,7 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
 
                             {txNFTConfirmation && (
                               <Box>
-                                <Progress colorScheme="teal" hasStripe value={txNFTConfirmation} />
+                                <Progress isAnimated={true} colorScheme="teal" hasStripe value={txNFTConfirmation} />
                               </Box>
                             )}
                           </Stack>
