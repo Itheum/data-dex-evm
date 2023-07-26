@@ -58,6 +58,7 @@ import { useChainMeta } from "store/ChainMetaContext";
 import ShortAddress from "UtilComps/ShortAddress";
 import ListDataNFTModal from "./ListDataNFTModal";
 import blueTickIcon from "img/creator-verified.png";
+import { useConnectWallet } from "@web3-onboard/react";
 
 import { ethers } from "ethers";
 import { ABIS } from "../EVM/ABIs";
@@ -110,6 +111,9 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
   const [txHashUpdateProperty, setTxHashUpdateProperty] = useState<string>("");
   const [txErrorUpdateProperty, setTxErrorUpdateProperty] = useState<any | null>(null);
   const [nftImageLoaded, setNftImageLoaded] = useState(false);
+
+  const [{ wallet }] = useConnectWallet();
+
   useEffect(() => {
     if (txErrorUpdateProperty) {
       setUpdatePropertyWorking(false);
@@ -132,7 +136,6 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
     setUpdatePropertyWorking(true);
 
     const web3Signer = _chainMeta.ethersProvider.getSigner();
-
     const dnftContract = new ethers.Contract(_chainMeta.contracts.dnft, ABIS.dNFT, web3Signer);
 
     try {
@@ -424,23 +427,27 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
                     {isTradable ? "Yes" : "No"}
                   </Badge>
                 )}
-                <Spacer />
-                <Switch colorScheme="teal" isChecked={isTradable} onChange={handleToggleTradable} />
-                <Button
-                  size="xsm"
-                  p="1"
-                  fontSize={"xs"}
-                  colorScheme="teal"
-                  ml={2}
-                  isDisabled={isUpdateTradableDisabled}
-                  onClick={() => handleUpdateProperty("tradable")}
-                  _active={{
-                    bg: "#dddfe2",
-                    transform: "scale(0.98)",
-                    borderColor: "#bec3c9",
-                  }}>
-                  Update
-                </Button>
+                {item.creator === wallet?.accounts[0].address && (
+                  <>
+                    <Spacer />
+                    <Switch colorScheme="teal" isChecked={isTradable} onChange={handleToggleTradable} />
+                    <Button
+                      size="xsm"
+                      p="1"
+                      fontSize={"xs"}
+                      colorScheme="teal"
+                      ml={2}
+                      isDisabled={isUpdateTradableDisabled}
+                      onClick={() => handleUpdateProperty("tradable")}
+                      _active={{
+                        bg: "#dddfe2",
+                        transform: "scale(0.98)",
+                        borderColor: "#bec3c9",
+                      }}>
+                      Update
+                    </Button>
+                  </>
+                )}
               </HStack>
               <HStack mt="1">
                 <Text>Transferable: </Text>
