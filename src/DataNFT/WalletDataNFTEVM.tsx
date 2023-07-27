@@ -112,8 +112,6 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
   const [txErrorUpdateProperty, setTxErrorUpdateProperty] = useState<any | null>(null);
   const [nftImageLoaded, setNftImageLoaded] = useState(false);
 
-  const [{ wallet }] = useConnectWallet();
-
   useEffect(() => {
     if (txErrorUpdateProperty) {
       setUpdatePropertyWorking(false);
@@ -427,7 +425,7 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
                     {isTradable ? "Yes" : "No"}
                   </Badge>
                 )}
-                {item.creator === wallet?.accounts[0].address && (
+                {item.creator === _chainMeta.loggedInAddress && (
                   <>
                     <Spacer />
                     <Switch colorScheme="teal" isChecked={isTradable} onChange={handleToggleTradable} />
