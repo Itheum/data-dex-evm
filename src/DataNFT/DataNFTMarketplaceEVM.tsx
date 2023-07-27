@@ -71,8 +71,6 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
   const [currentPageItems, setCurrentPageItems] = useState<ItemType[]>([]);
   const [currentPageMetadatas, setCurrentPageMetadatas] = useState<DataNftMetadataType[]>([]);
 
-  const [items, setItems] = useState<ItemType[]>([]);
-
   const { isOpen: isDrawerOpenTradeStream, onOpen: onOpenDrawerTradeStream, onClose: onCloseDrawerTradeStream } = useDisclosure();
 
   // pagination
@@ -331,7 +329,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                           ) : (
                             <MyListedDataLowerCard
                               index={index}
-                              offers={items}
+                              offers={currentPageItems}
                               nftMetadatas={currentPageMetadatas}
                               itheumPrice={itheumPrice}
                               marketRequirements={marketRequirements}
