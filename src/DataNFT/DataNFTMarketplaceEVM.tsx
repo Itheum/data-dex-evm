@@ -73,9 +73,8 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
 
   const [items, setItems] = useState<ItemType[]>([]);
 
-  const [wantedTokenBalance, setWantedTokenBalance] = useState<string>("0");
-  const { isOpen: isDrawerOpenTradeStream, onOpen: onOpenDrawerTradeStream, onClose: onCloseDrawerTradeStream, getDisclosureProps } = useDisclosure();
-  console.log("MY ADDRESS " + _chainMeta.loggedInAddress);
+  const { isOpen: isDrawerOpenTradeStream, onOpen: onOpenDrawerTradeStream, onClose: onCloseDrawerTradeStream } = useDisclosure();
+
   // pagination
   const [pageCount, setPageCount] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(6);
@@ -100,31 +99,14 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
 
   const setPageIndex = (newPageIndex: number) => {
     setCurrentPage(newPageIndex + 1);
-    console.log("NEW PAGE " + newPageIndex);
     //navigate(`/datanfts/marketplace/${tabState === 1 ? "market" : "my"}${newPageIndex > 0 ? "/" + newPageIndex : ""}`);
   };
 
   const onGotoPage = useThrottle((newPageIndex: number) => {
-    console.log("ONGOTOPAGE " + newPageIndex);
     if (0 <= newPageIndex && newPageIndex < pageCount) {
       setPageIndex(newPageIndex);
     }
   });
-
-  const getCurrentPageItems = () => {
-    console.log("GET CURRENT PAGE items  pege -> " + currentPage);
-    const startIdx = (currentPage - 1) * pageSize;
-    const endIdx = currentPage * pageSize;
-
-    // Slice the 'items' array to get the items for the current page
-    const itemsForCurrentPage = filteredItems.slice(startIdx, endIdx);
-    itemsForCurrentPage.forEach((item) => console.log("ITEM " + item.index));
-    console.log("ALL filtered items : ");
-
-    filteredItems.forEach((item) => console.log("ITEM " + item.index + " owner : " + item.owner + " URL : " + item.nftImgUrl));
-
-    return itemsForCurrentPage;
-  };
 
   useEffect(() => {
     (async () => {
@@ -164,13 +146,12 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
           mergeSmartContractMetaData(_tokenIdAry, res.items, _dataNfts);
         });
     })();
-  }, [tabState, hasPendingTransactions, _chainMeta.networkId]); // no sense to fetch on current page or pageSize modify
+  }, [tabState, hasPendingTransactions, _chainMeta.networkId]);
 
   function mergeSmartContractMetaData(_tokenIdAry: any, _allItems: any, _dataNfts: any) {
     // use the list of token IDs to get all the other needed details (price, royalty etc) from the smart contract
     Promise.all(_tokenIdAry.map((i: string) => getTokenDetailsFromContract(i))).then((responses) => {
       const scMetaMap = responses.reduce((sum, i) => {
-        // only save the ones that are filtered
         sum[i.tokenId] = {
           royaltyInPercent: i.royaltyInPercent,
           secondaryTradeable: i.secondaryTradeable,
@@ -180,15 +161,6 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
 
         return sum;
       }, {});
-
-      // append the sc meta data like price, royalty etc to the master list
-      _dataNfts.forEach((item: any) => {
-        item.wanted_token_amount = scMetaMap[item.index].priceInItheum;
-      });
-
-      setItems(_dataNfts);
-
-      console.log("WE HAVE data nfts  :  " + _dataNfts.length);
 
       const _metadatas: DataNftMetadataType[] = [];
 
@@ -221,13 +193,8 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
       setNftMetadatas(_metadatas);
       setNftMetadatasLoading(false);
 
-      console.log("the items have been set  :: " + items.length);
-      console.log("WE HAVE METADATA  : " + _metadatas.length);
       const forSaleItems = _dataNfts?.filter((item: any) => scMetaMap[item.index].transferable === 1 && scMetaMap[item.index].secondaryTradeable === 1);
       setFilteredItems(forSaleItems);
-
-      console.log("WE HAVE FILTERED for sale ITEMS :  " + forSaleItems.length);
-      console.log("WE HAVE FILTERED ITEMS :  " + filteredItems.length);
 
       // end loading offers
       setLoadingOffers(false);
@@ -350,7 +317,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                           currentPageMetadatas.length > 0 &&
                           !loadingOffers &&
                           !nftMetadatasLoading &&
-                          !item.owner === _chainMeta.loggedInAddress ? (
+                          !(_chainMeta.loggedInAddress && _chainMeta.loggedInAddress == item?.owner) ? (
                             <MarketplaceLowerCard
                               nftMetadatas={currentPageMetadatas}
                               index={index}
