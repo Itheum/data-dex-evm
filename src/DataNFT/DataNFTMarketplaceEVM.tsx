@@ -1,6 +1,5 @@
 import React, { FC, useEffect, useState } from "react";
 import {
-  Button,
   Flex,
   Heading,
   HStack,
@@ -24,13 +23,11 @@ import {
   useColorMode,
   useToast,
 } from "@chakra-ui/react";
-import { useGetLoginInfo } from "@multiversx/sdk-dapp/hooks/account";
-import { useGetAccountInfo } from "@multiversx/sdk-dapp/hooks/account";
+
 import { useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks/transactions";
 import { FaStore, FaBrush } from "react-icons/fa";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import DataNFTDetails from "DataNFT/DataNFTDetails";
-import { sleep } from "libs/util";
 import { createNftId } from "libs/util2";
 import { DataNftMetadataType, ItemType, MarketplaceRequirementsType, OfferType, OfferTypeEVM } from "MultiversX/typesEVM";
 import { useChainMeta } from "store/ChainMetaContext";
@@ -52,13 +49,7 @@ interface PropsType {
 export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTokenBalance }) => {
   const { colorMode } = useColorMode();
   const navigate = useNavigate();
-  const { isLoggedIn: isMxLoggedIn } = useGetLoginInfo();
-  const { pageNumber } = useParams();
-  const pageIndex = pageNumber ? Number(pageNumber) : 0;
-
   const { chainMeta: _chainMeta } = useChainMeta() as any;
-  const itheumToken = _chainMeta?.contracts?.itheumToken || null;
-  const { address } = useGetAccountInfo();
   const { hasPendingTransactions, pendingTransactions } = useGetPendingTransactions();
 
   const [itheumPrice, setItheumPrice] = useState<number | undefined>();
@@ -75,48 +66,65 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
   const [offerForDrawer, setOfferForDrawer] = useState<OfferType | undefined>();
 
   const [offers, setOffers] = useState<OfferType[]>([]);
-  const [items, setItems] = useState<ItemType[]>([
-    {
-      index: 0,
-      owner: "",
-      wanted_token_identifier: "",
-      wanted_token_amount: "",
-      wanted_token_nonce: 0,
-      offered_token_identifier: "",
-      offered_token_nonce: 0,
-      balance: 0,
-      supply: 0,
-      royalties: 0,
-      id: "",
-      dataPreview: "",
-      quantity: 0,
-      nonce: 0,
-      nftImgUrl: "",
-      title: "",
-      tokenName: "",
-      transferable: -2,
-      secondaryTradeable: -2,
-    },
-  ]);
+  const [filteredItems, setFilteredItems] = useState<ItemType[]>([]);
+
+  const [currentPageItems, setCurrentPageItems] = useState<ItemType[]>([]);
+  const [currentPageMetadatas, setCurrentPageMetadatas] = useState<DataNftMetadataType[]>([]);
+
+  const [items, setItems] = useState<ItemType[]>([]);
 
   const [wantedTokenBalance, setWantedTokenBalance] = useState<string>("0");
   const { isOpen: isDrawerOpenTradeStream, onOpen: onOpenDrawerTradeStream, onClose: onCloseDrawerTradeStream, getDisclosureProps } = useDisclosure();
-
+  console.log("MY ADDRESS " + _chainMeta.loggedInAddress);
   // pagination
   const [pageCount, setPageCount] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(8);
+  const [pageSize, setPageSize] = useState<number>(6);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const marketplace = "/datanfts/marketplace/market";
   const location = useLocation();
 
+  useEffect(() => {
+    setPageCount(Math.ceil(filteredItems.length / pageSize));
+  }, [filteredItems, pageSize]);
+
+  useEffect(() => {
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = currentPage * pageSize;
+
+    // Slice the arrays to get the items and metadatas that has to be displayed for the current page
+    const itemsForCurrentPage = filteredItems.slice(startIdx, endIdx);
+    const metadatasForCurrentPage = nftMetadatas.slice(startIdx, endIdx);
+    setCurrentPageMetadatas(metadatasForCurrentPage);
+    setCurrentPageItems(itemsForCurrentPage);
+  }, [currentPage, filteredItems]);
+
   const setPageIndex = (newPageIndex: number) => {
-    navigate(`/datanfts/marketplace/${tabState === 1 ? "market" : "my"}${newPageIndex > 0 ? "/" + newPageIndex : ""}`);
+    setCurrentPage(newPageIndex + 1);
+    console.log("NEW PAGE " + newPageIndex);
+    //navigate(`/datanfts/marketplace/${tabState === 1 ? "market" : "my"}${newPageIndex > 0 ? "/" + newPageIndex : ""}`);
   };
 
   const onGotoPage = useThrottle((newPageIndex: number) => {
+    console.log("ONGOTOPAGE " + newPageIndex);
     if (0 <= newPageIndex && newPageIndex < pageCount) {
       setPageIndex(newPageIndex);
     }
   });
+
+  const getCurrentPageItems = () => {
+    console.log("GET CURRENT PAGE items  pege -> " + currentPage);
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = currentPage * pageSize;
+
+    // Slice the 'items' array to get the items for the current page
+    const itemsForCurrentPage = filteredItems.slice(startIdx, endIdx);
+    itemsForCurrentPage.forEach((item) => console.log("ITEM " + item.index));
+    console.log("ALL filtered items : ");
+
+    filteredItems.forEach((item) => console.log("ITEM " + item.index + " owner : " + item.owner + " URL : " + item.nftImgUrl));
+
+    return itemsForCurrentPage;
+  };
 
   useEffect(() => {
     (async () => {
@@ -156,12 +164,13 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
           mergeSmartContractMetaData(_tokenIdAry, res.items, _dataNfts);
         });
     })();
-  }, [pageIndex, pageSize, tabState, hasPendingTransactions, _chainMeta.networkId]);
+  }, [tabState, hasPendingTransactions, _chainMeta.networkId]); // no sense to fetch on current page or pageSize modify
 
   function mergeSmartContractMetaData(_tokenIdAry: any, _allItems: any, _dataNfts: any) {
     // use the list of token IDs to get all the other needed details (price, royalty etc) from the smart contract
     Promise.all(_tokenIdAry.map((i: string) => getTokenDetailsFromContract(i))).then((responses) => {
       const scMetaMap = responses.reduce((sum, i) => {
+        // only save the ones that are filtered
         sum[i.tokenId] = {
           royaltyInPercent: i.royaltyInPercent,
           secondaryTradeable: i.secondaryTradeable,
@@ -179,36 +188,46 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
 
       setItems(_dataNfts);
 
-      setNftMetadatasLoading(true);
+      console.log("WE HAVE data nfts  :  " + _dataNfts.length);
 
       const _metadatas: DataNftMetadataType[] = [];
 
       for (let i = 0; i < _allItems.length; i++) {
-        _metadatas.push({
-          index: _allItems[i].tokenId,
-          id: _allItems[i].tokenId,
-          nftImgUrl: _allItems[i].image,
-          dataPreview: "",
-          dataStream: "",
-          dataMarshal: "",
-          tokenName: "",
-          creator: "", // we don't know who the creator is -- this info only comes via Covalent API for now
-          creationTime: new Date(), // we don't know who the creator is -- this info only comes via Covalent API for now
-          supply: 1,
-          balance: 1,
-          description: _allItems[i].description,
-          title: _allItems[i].name,
-          royalties: scMetaMap[_allItems[i].tokenId].royaltyInPercent,
-          nonce: 0,
-          collection: _allItems[i].contractAddress,
-          feeInTokens: scMetaMap[_allItems[i].tokenId].priceInItheum,
-          transferable: scMetaMap[_allItems[i].tokenId].transferable,
-          secondaryTradeable: scMetaMap[_allItems[i].tokenId].secondaryTradeable,
-        });
+        if (scMetaMap[_allItems[i].tokenId].transferable === 1 && scMetaMap[_allItems[i].tokenId].secondaryTradeable === 1) {
+          _metadatas.push({
+            index: _allItems[i].tokenId,
+            id: _allItems[i].tokenId,
+            nftImgUrl: _allItems[i].image,
+            dataPreview: "",
+            dataStream: "",
+            dataMarshal: "",
+            tokenName: "",
+            creator: "", // we don't know who the creator is -- this info only comes via Covalent API for now
+            creationTime: new Date(), // we don't know who the creator is -- this info only comes via Covalent API for now
+            supply: 1,
+            balance: 1,
+            description: _allItems[i].description,
+            title: _allItems[i].name,
+            royalties: scMetaMap[_allItems[i].tokenId].royaltyInPercent,
+            nonce: 0,
+            collection: _allItems[i].contractAddress,
+            feeInTokens: scMetaMap[_allItems[i].tokenId].priceInItheum,
+            transferable: scMetaMap[_allItems[i].tokenId].transferable,
+            secondaryTradeable: scMetaMap[_allItems[i].tokenId].secondaryTradeable,
+          });
+        }
       }
 
       setNftMetadatas(_metadatas);
       setNftMetadatasLoading(false);
+
+      console.log("the items have been set  :: " + items.length);
+      console.log("WE HAVE METADATA  : " + _metadatas.length);
+      const forSaleItems = _dataNfts?.filter((item: any) => scMetaMap[item.index].transferable === 1 && scMetaMap[item.index].secondaryTradeable === 1);
+      setFilteredItems(forSaleItems);
+
+      console.log("WE HAVE FILTERED for sale ITEMS :  " + forSaleItems.length);
+      console.log("WE HAVE FILTERED ITEMS :  " + filteredItems.length);
 
       // end loading offers
       setLoadingOffers(false);
@@ -291,7 +310,13 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                 </Tab>
               </Flex>
               <Flex mr="4.7rem">
-                <CustomPagination pageCount={pageCount} pageIndex={pageIndex} pageSize={pageSize} gotoPage={onGotoPage} disabled={hasPendingTransactions} />
+                <CustomPagination
+                  pageCount={pageCount}
+                  pageIndex={currentPage - 1}
+                  pageSize={pageSize}
+                  gotoPage={onGotoPage}
+                  disabled={hasPendingTransactions}
+                />
               </Flex>
             </TabList>
 
@@ -307,13 +332,13 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                     mt="5 !important"
                     justifyItems={"center"}>
                     {offers.length > 0 &&
-                      items?.map((item, index) => (
+                      currentPageItems?.map((item, index) => (
                         <UpperCardComponentEVM
                           key={index}
                           nftImageLoading={oneNFTImgLoaded && !loadingOffers}
-                          imageUrl={nftMetadatas[index]?.nftImgUrl || ""}
+                          imageUrl={currentPageMetadatas[index]?.nftImgUrl || ""}
                           setNftImageLoaded={setOneNFTImgLoaded}
-                          nftMetadatas={nftMetadatas}
+                          nftMetadatas={currentPageMetadatas}
                           marketRequirements={marketRequirements}
                           item={item}
                           userData={userData}
@@ -321,9 +346,13 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                           marketFreezedNonces={marketFreezedNonces}
                           openNftDetailsDrawer={openNftDetailsDrawer}
                           itheumPrice={itheumPrice}>
-                          {location.pathname.includes(marketplace) && nftMetadatas.length > 0 && !loadingOffers && !nftMetadatasLoading ? (
+                          {location.pathname.includes(marketplace) &&
+                          currentPageMetadatas.length > 0 &&
+                          !loadingOffers &&
+                          !nftMetadatasLoading &&
+                          !item.owner === _chainMeta.loggedInAddress ? (
                             <MarketplaceLowerCard
-                              nftMetadatas={nftMetadatas}
+                              nftMetadatas={currentPageMetadatas}
                               index={index}
                               item={item}
                               offers={offers}
@@ -336,7 +365,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                             <MyListedDataLowerCard
                               index={index}
                               offers={items}
-                              nftMetadatas={nftMetadatas}
+                              nftMetadatas={currentPageMetadatas}
                               itheumPrice={itheumPrice}
                               marketRequirements={marketRequirements}
                               maxPaymentFeeMap={maxPaymentFeeMap}
@@ -357,7 +386,13 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
             /* show bottom pagination only if offers exist */
             offers.length > 0 && (
               <Flex justifyContent={{ base: "center", md: "center" }} py="5">
-                <CustomPagination pageCount={pageCount} pageIndex={pageIndex} pageSize={pageSize} gotoPage={onGotoPage} disabled={hasPendingTransactions} />
+                <CustomPagination
+                  pageCount={pageCount}
+                  pageIndex={currentPage - 1}
+                  pageSize={pageSize}
+                  gotoPage={onGotoPage}
+                  disabled={hasPendingTransactions}
+                />
               </Flex>
             )
           }
