@@ -100,9 +100,9 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
   const [priceError, setPriceError] = useState("");
   const [itheumPrice, setItheumPrice] = useState<number | undefined>();
 
-  const [isTradable, setIsTradable] = useState(false);
+  const [istradeable, setIstradeable] = useState(false);
   const [isTransferable, setIsTransferable] = useState(false);
-  const [isUpdateTradableDisabled, setIsUpdateTradableDisabled] = useState(true);
+  const [isUpdatetradeableDisabled, setIsUpdatetradeableDisabled] = useState(true);
   const [isUpdateTransferableDisabled, setIsUpdateTransferableDisabled] = useState(true);
   const modelSize = useBreakpointValue({ base: "xs", md: "xl" });
   const { isOpen: isUpdateModalOpen, onOpen: onUpdateModalOpen, onClose: onUpdateModalClose } = useDisclosure();
@@ -138,8 +138,8 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
 
     try {
       const txResponse =
-        propertyWantedToUpdate === "tradable"
-          ? await dnftContract.setDataNFTSecondaryTradeable(item.id, !item.transferable) // Tradable
+        propertyWantedToUpdate === "tradeable"
+          ? await dnftContract.setDataNFTSecondaryTradeable(item.id, !item.secondaryTradeable) // tradeable
           : await dnftContract.setDataNFTTransferable(item.id, !item.transferable); // Transferable
 
       // show a nice loading animation to user
@@ -155,18 +155,18 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
       await sleep(2);
 
       if (txReceipt.status) {
-        propertyWantedToUpdate === "tradable" ? setIsUpdateTradableDisabled(true) : setIsUpdateTransferableDisabled(true);
+        propertyWantedToUpdate === "tradeable" ? setIsUpdatetradeableDisabled(true) : setIsUpdateTransferableDisabled(true);
 
         setTxConfirmationUpdateProperty(100);
       } else {
         const txErr = new Error(
-          `Data NFT Contract Error on method ${propertyWantedToUpdate === "tradable" ? "setDataNFTSecondaryTradeable" : "setDataNFTTransferable"}`
+          `Data NFT Contract Error on method ${propertyWantedToUpdate === "tradeable" ? "setDataNFTSecondaryTradeable" : "setDataNFTTransferable"}`
         );
         setTxErrorUpdateProperty(txErr);
       }
     } catch (e) {
       console.log(e);
-      // console.log("DATA " + e.data);
+
       setTxErrorUpdateProperty(e);
     }
   };
@@ -178,16 +178,16 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
     setTxErrorUpdateProperty(null);
   }
 
-  const handleToggleTradable = () => {
-    setIsTradable(!isTradable);
-    setIsUpdateTradableDisabled(!isUpdateTradableDisabled);
+  const handleToggletradeable = () => {
+    setIstradeable(!istradeable);
+    setIsUpdatetradeableDisabled(!isUpdatetradeableDisabled);
   };
   const handleToggleTransferable = () => {
     setIsTransferable(!isTransferable);
     setIsUpdateTransferableDisabled(!isUpdateTransferableDisabled);
   };
   useEffect(() => {
-    item.secondaryTradeable === 1 ? setIsTradable(true) : setIsTradable(false);
+    item.secondaryTradeable === 1 ? setIstradeable(true) : setIstradeable(false);
   }, [item.secondaryTradeable]);
   useEffect(() => {
     item.transferable === 1 ? setIsTransferable(true) : setIsTransferable(false);
@@ -416,27 +416,27 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
             <Box fontSize="md" fontWeight="normal" my={2}>
               {`Royalty: ${item.royalties === -2 ? "Loading..." : item.royalties}%`}$
               <HStack>
-                <Text>Tradable: </Text>
-                `Tradable: $
+                <Text>tradeable: </Text>
+                `tradeable: $
                 {item.secondaryTradeable === -2 ? (
                   "Loading..."
                 ) : (
-                  <Badge borderRadius="sm" colorScheme={isTradable ? "teal" : "red"}>
-                    {isTradable ? "Yes" : "No"}
+                  <Badge borderRadius="sm" colorScheme={istradeable ? "teal" : "red"}>
+                    {istradeable ? "Yes" : "No"}
                   </Badge>
                 )}
                 {item.creator === _chainMeta.loggedInAddress && (
                   <>
                     <Spacer />
-                    <Switch colorScheme="teal" isChecked={isTradable} onChange={handleToggleTradable} />
+                    <Switch colorScheme="teal" isChecked={istradeable} onChange={handleToggletradeable} />
                     <Button
                       size="xsm"
                       p="1"
                       fontSize={"xs"}
                       colorScheme="teal"
                       ml={2}
-                      isDisabled={isUpdateTradableDisabled}
-                      onClick={() => handleUpdateProperty("tradable")}
+                      isDisabled={isUpdatetradeableDisabled}
+                      onClick={() => handleUpdateProperty("tradeable")}
                       _active={{
                         bg: "#dddfe2",
                         transform: "scale(0.98)",
