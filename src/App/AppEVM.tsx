@@ -107,7 +107,8 @@ function App({
     if (_chainMeta?.networkId) {
       // const networkId = mxEnvironment === "mainnet" ? "E1" : "ED";
 
-      if (_chainMeta?.isEVMAuthenticated) {
+      // if the user has been on landing page and login
+      if (_chainMeta?.isEVMAuthenticated && pathname === "/") {
         setMenuItem(PATHS["home"]?.[0] as number);
         navigate("home");
       }
