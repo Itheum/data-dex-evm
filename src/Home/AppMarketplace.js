@@ -498,7 +498,6 @@ export default function AppMarketplace({ setMenuItem }) {
                   </Box>
 
                   <Flex justifyContent="end" mt="20 !important">
-                    <Text>{psnUserDataStream}</Text>
                     <Button
                       mx="3"
                       colorScheme="grey"
