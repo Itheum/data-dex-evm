@@ -414,7 +414,7 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
               </Button> */}
             </Stack>
             <Box fontSize="md" fontWeight="normal" my={2}>
-              {`Royalty: ${item.royalties === -2 ? "Loading..." : item.royalties}%`}$
+              {`Royalty: ${item.royalties === -2 ? "Loading..." : item.royalties}%`}
               <HStack>
                 <Text>tradeable: </Text>
                 `tradeable: $
