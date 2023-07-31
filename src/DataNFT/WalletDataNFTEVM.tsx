@@ -41,14 +41,14 @@ import {
   Switch,
   Spacer,
   useBreakpointValue,
-  Heading,
+  Tooltip,
   Progress,
 } from "@chakra-ui/react";
 import { useGetAccountInfo, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
 import imgGuidePopup from "img/guide-unblock-popups.png";
 import { useLocalStorage } from "libs/hooks";
 import { labels } from "libs/language";
-import { CHAIN_TX_VIEWER, uxConfig, isValidNumericCharacter, sleep, styleStrings, itheumTokenRoundUtilExtended, CHAIN_TOKEN_SYMBOL } from "libs/util";
+import { CHAIN_TX_VIEWER, uxConfig, isValidNumericCharacter, sleep, styleStrings, itheumTokenRoundUtilExtended } from "libs/util";
 import { transformDescription } from "libs/util2";
 import { getItheumPriceFromApi } from "MultiversX/api";
 import { DataNftMarketContract } from "MultiversX/dataNftMarket";
@@ -377,7 +377,7 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
                 <HStack>
                   {item.creator === "0x950c869b1af2543154bd668d83188c1bc77bf82c" && <Image h="20px" src={blueTickIcon} />}
                   Creator: <ShortAddress address={item.creator} fontSize="md"></ShortAddress>
-                  <Link href={`${CHAIN_TX_VIEWER[_chainMeta.networkId as keyof typeof CHAIN_TX_VIEWER]}/accounts/${item.creator}`} isExternal>
+                  <Link href={`${CHAIN_TX_VIEWER[_chainMeta.networkId as keyof typeof CHAIN_TX_VIEWER]}/account/${item.creator}`} isExternal>
                     <ExternalLinkIcon ml="5px" fontSize="sm" />
                   </Link>
                 </HStack>
@@ -388,7 +388,7 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
               {`Creation time: ${moment(item.creationTime).format(uxConfig.dateStr)}`}
             </Box> */}
 
-            <Stack display="flex" flexDirection="column" justifyContent="flex-start" alignItems="flex-start" my="2" height="7rem">
+            <Stack backgroundColor="none" display="flex" flexDirection="column" justifyContent="flex-start" alignItems="flex-start" my="2" height="6rem">
               <Badge borderRadius="md" px="3" py="1" mt="1" colorScheme="teal">
                 <Text fontSize={"sm"} fontWeight="semibold">
                   You are the {item.creator !== address ? "Owner" : "Creator"}
@@ -413,67 +413,79 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
                 Burn
               </Button> */}
             </Stack>
-            <Box fontSize="md" fontWeight="normal" my={2}>
-              {`Royalty: ${item.royalties === -2 ? "Loading..." : item.royalties}%`}
-              <HStack>
-                <Text>tradeable: </Text>
-                `tradeable: $
-                {item.secondaryTradeable === -2 ? (
-                  "Loading..."
-                ) : (
-                  <Badge borderRadius="sm" colorScheme={istradeable ? "teal" : "red"}>
-                    {istradeable ? "Yes" : "No"}
-                  </Badge>
-                )}
-                {item.creator === _chainMeta.loggedInAddress && (
-                  <>
-                    <Spacer />
-                    <Switch colorScheme="teal" isChecked={istradeable} onChange={handleToggletradeable} />
-                    <Button
-                      size="xsm"
-                      p="1"
-                      fontSize={"xs"}
-                      colorScheme="teal"
-                      ml={2}
-                      isDisabled={isUpdatetradeableDisabled}
-                      onClick={() => handleUpdateProperty("tradeable")}
-                      _active={{
-                        bg: "#dddfe2",
-                        transform: "scale(0.98)",
-                        borderColor: "#bec3c9",
-                      }}>
-                      Update
-                    </Button>
-                  </>
-                )}
-              </HStack>
-              <HStack mt="1">
-                <Text>Transferable: </Text>
-                {item.transferable === -2 ? (
-                  "Loading..."
-                ) : (
-                  <Badge borderRadius="sm" colorScheme={isTransferable ? "teal" : "red"}>
-                    {isTransferable ? "Yes" : "No"}
-                  </Badge>
-                )}
-                <Spacer />
-                <Switch colorScheme="teal" isChecked={isTransferable} onChange={handleToggleTransferable} />
-                <Button
-                  size="xsm"
-                  p="1"
-                  fontSize={"xs"}
-                  colorScheme="teal"
-                  ml={2}
-                  isDisabled={isUpdateTransferableDisabled}
-                  onClick={() => handleUpdateProperty("transferable")}>
-                  Update
-                </Button>
-              </HStack>
-              {`Balance: ${item.balance} (Max supply: ${item.supply})`}
+
+            <Box backgroundColor="none" fontSize="md" fontWeight="normal" my={2}>
+              <Text fontWeight="bold" fontSize="md">{`Royalty: ${item.royalties === -2 ? "Loading..." : item.royalties}%`}</Text>
+
+              <Box my="10px">
+                <HStack>
+                  <Tooltip label={labels.WHAT_IS_TRADABLE}>
+                    <Text fontSize="sm" w="75px">
+                      Externally Tradable:{" "}
+                    </Text>
+                  </Tooltip>
+                  `Tradable: $
+                  {item.secondaryTradeable === -2 ? (
+                    "Loading..."
+                  ) : (
+                    <Badge borderRadius="sm" colorScheme={istradeable ? "teal" : "red"}>
+                      {istradeable ? "Yes" : "No"}
+                    </Badge>
+                  )}
+                  {item.creator === _chainMeta.loggedInAddress && (
+                    <>
+                      <Spacer />
+                      <Switch colorScheme="teal" isChecked={istradeable} onChange={handleToggletradeable} />
+                      <Button
+                        size="xsm"
+                        p="1"
+                        fontSize={"xs"}
+                        colorScheme="teal"
+                        ml={2}
+                        isDisabled={isUpdatetradeableDisabled}
+                        onClick={() => handleUpdateProperty("tradeable")}
+                        _active={{
+                          bg: "#dddfe2",
+                          transform: "scale(0.98)",
+                          borderColor: "#bec3c9",
+                        }}>
+                        Update
+                      </Button>
+                    </>
+                  )}
+                </HStack>
+                <HStack mt="1">
+                  <Tooltip label={labels.WHAT_IS_TRANSFERABLE}>
+                    <Text fontSize="sm" w="75px">
+                      List for Trade:{" "}
+                    </Text>
+                  </Tooltip>
+                  {item.transferable === -2 ? (
+                    "Loading..."
+                  ) : (
+                    <Badge borderRadius="sm" colorScheme={isTransferable ? "teal" : "red"}>
+                      {isTransferable ? "Yes" : "No"}
+                    </Badge>
+                  )}
+                  <Spacer />
+                  <Switch colorScheme="teal" isChecked={isTransferable} onChange={handleToggleTransferable} />
+                  <Button
+                    size="xsm"
+                    p="1"
+                    fontSize="xs"
+                    colorScheme="teal"
+                    ml={2}
+                    isDisabled={isUpdateTransferableDisabled}
+                    onClick={() => handleUpdateProperty("transferable")}>
+                    Update
+                  </Button>
+                </HStack>
+              </Box>
+              {/* {`Balance: ${item.balance} (Max supply: ${item.supply})`} */}
             </Box>
 
             <HStack borderTop="solid 1px" pt="5px">
-              <Box>{`Fee In Tokens: ${
+              <Box fontWeight="bold" fontSize="md">{`Unlock Fee: ${
                 item.feeInTokens === -2 ? "Loading..." : itheumTokenRoundUtilExtended(item.feeInTokens, 18, ethers.BigNumber, true)
               } ITHEUM`}</Box>
             </HStack>
@@ -601,7 +613,7 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
                 <HStack>
                   <Stack>
                     <Text fontSize={"lg"} fontWeight={"normal"}>
-                      Updating Transferable property of
+                      Updating the Externally Tradable property of
                     </Text>
                     <Text p={2} bg={"blackAlpha.300"} fontSize={"lg"} fontWeight={"semibold"}>
                       {item.title}

@@ -222,7 +222,7 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
 
   const [priceErrors, setPriceErrors] = useState<string[]>([]);
   const [prices, setPrices] = useState<number[]>([10]);
-  const [makeTradable, setMakeTradable] = useState<boolean>(true);
+  const [secondaryTradeable, setSecondaryTradeable] = useState<boolean>(false);
 
   // React hook form + yup integration
   // Declaring a validation schema for the form with the validation needed
@@ -385,7 +385,7 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
 
   const onChangeDataNFTImageGenService = () => {
     // Itheum Image Gen Service Check (Data DEX API health check)
-    checkUrlReturns200(`${process.env.REACT_APP_ENV_DATADEX_API}/health-check`).then(({ isSuccess, message }) => {
+    checkUrlReturns200(`${process.env.REACT_APP_ENV_DATADEX_DEVNET_API}/health-check`).then(({ isSuccess, message }) => {
       setDataNFTImgGenService(isSuccess);
     });
   };
@@ -630,7 +630,7 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
 
   const buildUniqueImage = async ({ dataNFTHash }: { dataNFTHash: any }) => {
     await sleep(3);
-    const newNFTImg = `${process.env.REACT_APP_ENV_DATADEX_API}/v1/generateNFTArt?hash=${dataNFTHash}`;
+    const newNFTImg = `${process.env.REACT_APP_ENV_DATADEX_DEVNET_API}/v1/generateNFTArt?hash=${dataNFTHash}`;
 
     setSaveProgress((prevSaveProgress) => ({ ...prevSaveProgress, s2: 1 }));
 
@@ -675,7 +675,7 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
       const _uri = params.metadataOnIpfsUrl;
       const _priceInItheum = prices[0];
       const _royaltyInPercent = dataNFTRoyalty || 0;
-      const _secondaryTradeable = makeTradable;
+      const _secondaryTradeable = secondaryTradeable;
 
       const decimals = 18;
       const priceInPrecision = ethers.utils.parseUnits(`${_priceInItheum}.0`, decimals).toHexString();
@@ -1162,7 +1162,7 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
                         <FormErrorMessage>{errors?.datasetDescriptionForm?.message}</FormErrorMessage>
                       </FormControl>
 
-                      <FormControl isInvalid={!!errors.numberOfCopiesForm}>
+                      {/* <FormControl isInvalid={!!errors.numberOfCopiesForm}>
                         <InputLabelWithPopover tkey="number-of-copies">
                           <Text fontWeight="bold" fontSize="md" mt={1}>
                             Number of copies
@@ -1200,7 +1200,7 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
                       </FormControl>
                       <Text color="gray.400" fontSize="sm" mt="1 !important">
                         Limit the quality to increase value (rarity) - Suggested: less than {maxSupply}
-                      </Text>
+                      </Text> */}
 
                       <FormControl isInvalid={!!errors.royaltiesForm}>
                         <InputLabelWithPopover tkey="royalties">
@@ -1243,7 +1243,7 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
 
                       <Box>
                         <Text mt="10px" fontWeight="bold" fontSize="md">
-                          Unlock fee for each
+                          List on Data NFT marketplace for an unlock fee of
                         </Text>
                         <HStack>
                           <NumberInput
@@ -1286,11 +1286,27 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
                         )}
                       </Box>
 
-                      <Box>
-                        <Text mt="10px" fontWeight="bold" fontSize="md">
-                          Make tradable
+                      <Box mt="5">
+                        <Text fontWeight="bold" color="teal.200" fontSize="xl" mt="8 !important">
+                          Do you want this Data NFT tradable in 3rd Party NFT Marketplaces?
                         </Text>
-                        <Switch mt="10px" colorScheme="teal" size="lg" isChecked={makeTradable} onChange={(e) => setMakeTradable(e.target.checked)} />
+                        <Text fontSize="md" mt="4 !important">
+                          You can trade Data NFTs in all 3rd Party Marketplaces as Data NFTs are just regular NFTs with Data Streams attached to them. But doing
+                          so has some risks to you as a Data Creator,{" "}
+                          <b>the main risk being that there is no guarantee that you will get your creator royalty payments if your Data NFT is re-traded.</b>{" "}
+                          If you are uncomfortable with this, we recommend you keep turned this off to ensure your Data NFT is only tradable in {`Itheum's`}{" "}
+                          Data NFT Marketplace, where your creator royalties will ALWAYS be paid to you.
+                        </Text>
+                        <Text fontWeight="bold" mt="5">
+                          Toggle to yes, if you want your Data NFT tradable in 3rd party marketplaces.
+                        </Text>
+                        <Switch
+                          mt="10px"
+                          colorScheme="teal"
+                          size="lg"
+                          isChecked={secondaryTradeable}
+                          onChange={(e) => setSecondaryTradeable(e.target.checked)}
+                        />
                       </Box>
                     </Stack>
 

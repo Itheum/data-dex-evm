@@ -466,7 +466,7 @@ export default function MintDataMX({ onRfMount, dataCATAccount }: { onRfMount: a
 
   const onChangeDataNFTImageGenService = () => {
     // Itheum Image Gen Service Check (Data DEX API health check)
-    checkUrlReturns200(`${process.env.REACT_APP_ENV_DATADEX_API}/health-check`).then(({ isSuccess, message }) => {
+    checkUrlReturns200(`${process.env.REACT_APP_ENV_DATADEX_DEVNET_API}/health-check`).then(({ isSuccess, message }) => {
       setDataNFTImgGenService(isSuccess);
     });
   };
@@ -760,7 +760,7 @@ export default function MintDataMX({ onRfMount, dataCATAccount }: { onRfMount: a
 
   const buildUniqueImage = async ({ dataNFTHash, dataNFTStreamUrlEncrypted }: { dataNFTHash: any; dataNFTStreamUrlEncrypted: any }) => {
     await sleep(3);
-    const newNFTImg = `${process.env.REACT_APP_ENV_DATADEX_API}/v1/generateNFTArt?hash=${dataNFTHash}`;
+    const newNFTImg = `${process.env.REACT_APP_ENV_DATADEX_DEVNET_API}/v1/generateNFTArt?hash=${dataNFTHash}`;
 
     setSaveProgress((prevSaveProgress) => ({ ...prevSaveProgress, s2: 1 }));
 
