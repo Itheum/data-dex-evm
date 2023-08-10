@@ -163,7 +163,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
       const _metadatas: DataNftMetadataType[] = [];
 
       for (let i = 0; i < _allItems.length; i++) {
-        if (scMetaMap[_allItems[i].tokenId].transferable === 1 && scMetaMap[_allItems[i].tokenId].secondaryTradeable === 1) {
+        if (scMetaMap[_allItems[i].tokenId].transferable === 1) {
           _metadatas.push({
             index: _allItems[i].tokenId,
             id: _allItems[i].tokenId,
@@ -191,7 +191,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
       setNftMetadatas(_metadatas);
       setNftMetadatasLoading(false);
 
-      const forSaleItems = _dataNfts?.filter((item: any) => scMetaMap[item.index].transferable === 1 && scMetaMap[item.index].secondaryTradeable === 1);
+      const forSaleItems = _dataNfts?.filter((item: any) => scMetaMap[item.index].transferable === 1);
       setFilteredItems(forSaleItems);
 
       // end loading offers
