@@ -451,21 +451,21 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
   }, [maxSupply]);
 
   useEffect(() => {
-    // console.log("dataNFTStreamUrlError ", dataNFTStreamUrlError.toString());
-    // console.log("dataNFTStreamPreviewUrlError ", dataNFTStreamPreviewUrlError.toString());
-    // console.log("datasetTitleError ", datasetTitleError.toString());
-    // console.log("datasetDescriptionError ", datasetDescriptionError.toString());
-    // console.log("dataNFTCopiesError ", dataNFTCopiesError.toString());
-    // console.log("dataNFTRoyaltyError ", dataNFTRoyaltyError.toString());
-    // console.log("dataNFTStreamUrlStatus ", dataNFTStreamUrlStatus.toString());
-    // console.log("dataNFTStreamPreviewUrlStatus ", dataNFTStreamPreviewUrlStatus.toString());
-    // console.log("dataNFTImgGenServiceValid ", dataNFTImgGenServiceValid.toString());
-    // console.log("readTermsChecked ", readTermsChecked.toString());
-    // console.log("readAntiSpamFeeChecked ", readAntiSpamFeeChecked.toString());
-    // console.log("minRoyalties ", minRoyalties.toString());
-    // console.log("maxRoyalties ", maxRoyalties.toString());
-    // console.log("maxSupply ", maxSupply.toString());
-    // console.log("antiSpamTax ", antiSpamTax.toString());
+    console.log("dataNFTStreamUrlError ", !!dataNFTStreamUrlError);
+    console.log("dataNFTStreamPreviewUrlError ", !!dataNFTStreamPreviewUrlError);
+    console.log("datasetTitleError ", !!datasetTitleError);
+    console.log("datasetDescriptionError ", !!datasetDescriptionError);
+    console.log("dataNFTCopiesError ", !!dataNFTCopiesError);
+    console.log("dataNFTRoyaltyError ", !!dataNFTRoyaltyError.toString());
+    console.log("dataNFTStreamUrlStatus ", !!dataNFTStreamUrlStatus.toString());
+    console.log("dataNFTStreamPreviewUrlStatus ", !!dataNFTStreamPreviewUrlStatus.toString());
+    console.log("dataNFTImgGenServiceValid ", !!dataNFTImgGenServiceValid.toString());
+    console.log("readTermsChecked ", !readTermsChecked.toString());
+    console.log("readAntiSpamFeeChecked ", !readAntiSpamFeeChecked.toString());
+    console.log("minRoyalties ", minRoyalties.toString());
+    console.log("maxRoyalties ", maxRoyalties.toString());
+    console.log("maxSupply ", maxSupply.toString());
+    console.log("antiSpamTax ", antiSpamTax.toString());
 
     setMintDataNFTDisabled(
       !!dataNFTStreamUrlError ||
