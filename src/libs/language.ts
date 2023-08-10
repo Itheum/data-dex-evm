@@ -30,4 +30,6 @@ export const labels = {
   "MINT_FORM_POPUP_INFO_DESC": "A description of your data asset",
   "MINT_FORM_POPUP_INFO_SUPPLY": 'The total "supply" you would like to mint (i.e. individual copies of your data access license)',
   "MINT_FORM_POPUP_INFO_ROYALTY": 'The "Creator Royalty" you will earn each time a copy is re-traded in the Data NFT Marketplace',
+  "WHAT_IS_TRADABLE": `Do you want your Data NFT tradable in 3rd Party NFT Marketplaces?`,
+  "WHAT_IS_TRANSFERABLE": `Do you want to list your Data NFT for trade in the Itheum Data NFT Marketplace?`,
 };
