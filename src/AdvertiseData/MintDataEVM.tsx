@@ -291,6 +291,8 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
     control,
     formState: { errors },
     handleSubmit,
+    trigger,
+    setValue,
   } = useForm<TradeDataFormType>({
     defaultValues: {
       dataStreamUrlForm: "",
@@ -451,21 +453,21 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
   }, [maxSupply]);
 
   useEffect(() => {
-    console.log("dataNFTStreamUrlError ", !!dataNFTStreamUrlError);
-    console.log("dataNFTStreamPreviewUrlError ", !!dataNFTStreamPreviewUrlError);
-    console.log("datasetTitleError ", !!datasetTitleError);
-    console.log("datasetDescriptionError ", !!datasetDescriptionError);
-    console.log("dataNFTCopiesError ", !!dataNFTCopiesError);
-    console.log("dataNFTRoyaltyError ", !!dataNFTRoyaltyError.toString());
-    console.log("dataNFTStreamUrlStatus ", !!dataNFTStreamUrlStatus.toString());
-    console.log("dataNFTStreamPreviewUrlStatus ", !!dataNFTStreamPreviewUrlStatus.toString());
-    console.log("dataNFTImgGenServiceValid ", !!dataNFTImgGenServiceValid.toString());
-    console.log("readTermsChecked ", !readTermsChecked.toString());
-    console.log("readAntiSpamFeeChecked ", !readAntiSpamFeeChecked.toString());
-    console.log("minRoyalties ", minRoyalties.toString());
-    console.log("maxRoyalties ", maxRoyalties.toString());
-    console.log("maxSupply ", maxSupply.toString());
-    console.log("antiSpamTax ", antiSpamTax.toString());
+    // console.log("dataNFTStreamUrlError ", !!dataNFTStreamUrlError);
+    // console.log("dataNFTStreamPreviewUrlError ", !!dataNFTStreamPreviewUrlError);
+    // console.log("datasetTitleError ", !!datasetTitleError);
+    // console.log("datasetDescriptionError ", !!datasetDescriptionError);
+    // console.log("dataNFTCopiesError ", !!dataNFTCopiesError);
+    // console.log("dataNFTRoyaltyError ", !!dataNFTRoyaltyError.toString());
+    // console.log("dataNFTStreamUrlStatus ", !!dataNFTStreamUrlStatus.toString());
+    // console.log("dataNFTStreamPreviewUrlStatus ", !!dataNFTStreamPreviewUrlStatus.toString());
+    // console.log("dataNFTImgGenServiceValid ", !dataNFTImgGenServiceValid.toString());
+    // console.log("readTermsChecked ", !readTermsChecked.toString());
+    // console.log("readAntiSpamFeeChecked ", !readAntiSpamFeeChecked.toString());
+    // console.log("minRoyalties ", minRoyalties.toString());
+    // console.log("maxRoyalties ", maxRoyalties.toString());
+    // console.log("maxSupply ", maxSupply.toString());
+    // console.log("antiSpamTax ", antiSpamTax.toString());
 
     setMintDataNFTDisabled(
       !!dataNFTStreamUrlError ||
@@ -556,35 +558,35 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
       }
 
       if (searchParams.get("ds")) {
+        onChangeDataNFTStreamUrl(decodeURIComponent(searchParams.get("ds") || ""));
         setDataNFTStreamUrl(decodeURIComponent(searchParams.get("ds") || ""));
+        setValue("dataStreamUrlForm", decodeURIComponent(searchParams.get("ds") || ""));
       } else {
+        onChangeDataNFTStreamUrl(dataCATStreamUrl);
         setDataNFTStreamUrl(dataCATStreamUrl);
+        setValue("dataStreamUrlForm", dataCATStreamUrl);
       }
+      trigger("dataStreamUrlForm");
 
+      // after pre-completed data is set to the corresponding field, we set the value of the Yup form and trigger it so that the data
+      // can be validated and the form re-rendered to show the corresponding error message if there is one
+      onChangeDataNFTStreamPreviewUrl(dataCATStreamPreviewUrl); //validate the url so we can know if we should disable the button or not.
       setDataNFTStreamPreviewUrl(dataCATStreamPreviewUrl);
-      onChangeDatasetDescription(selObj.description);
+      setValue("dataPreviewUrlForm", dataCATStreamPreviewUrl);
+      trigger("dataPreviewUrlForm");
 
+      onChangeDatasetDescription(selObj.description);
+      setValue("datasetDescriptionForm", selObj.description);
+      trigger("datasetDescriptionForm");
       if (selObj.title) {
         onChangeDatasetTitle(selObj.title);
+        setValue("datasetTitleForm", selObj.title);
+        trigger("datasetTitleForm");
       }
     }
 
     setIsStreamTrade(isStreamTrade);
     onOpenDrawerTradeStream();
-
-    // as we are setting the stream and preview urls, we need to trigger the onchange of those fields and form to validate it. This only works if we pull off the UI thread (i.e. sleep)
-    if (dataCATProgram?.program) {
-      await sleep(3);
-
-      if (searchParams.get("ds")) {
-        onChangeDataNFTStreamUrl(decodeURIComponent(searchParams.get("ds") || ""));
-      } else {
-        onChangeDataNFTStreamUrl(dataCATStreamPreviewUrl);
-      }
-
-      onChangeDataNFTStreamPreviewUrl(dataCATStreamPreviewUrl);
-      setUserFocusedForm(true);
-    }
   };
 
   const dataNFTSellSubmit = async () => {
