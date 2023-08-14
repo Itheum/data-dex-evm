@@ -289,7 +289,12 @@ function App({
                 )) || <Route path="marketplace/market" element={<DataNFTMarketplaceMultiversX tabState={1} />} />}
 
                 <Route path="marketplace/market/:pageNumber" element={<DataNFTMarketplaceMultiversX tabState={1} />} />
-                <Route path="marketplace/my" element={<DataNFTMarketplaceMultiversX tabState={2} />} />
+                {(isEVMAuthenticated && (
+                  <Route
+                    path="marketplace/market/my"
+                    element={<DataNFTMarketplaceEVM tabState={2} setMenuItem={setMenuItem} onRefreshTokenBalance={itheumTokenBalanceUpdate} />}
+                  />
+                )) || <Route path="marketplace/my" element={<DataNFTMarketplaceMultiversX tabState={2} />} />}
                 <Route path="marketplace/my/:pageNumber" element={<DataNFTMarketplaceMultiversX tabState={2} />} />
               </Route>
 

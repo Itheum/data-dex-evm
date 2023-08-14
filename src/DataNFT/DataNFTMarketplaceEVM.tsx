@@ -22,6 +22,7 @@ import {
   TabPanels,
   useColorMode,
   useToast,
+  Button,
 } from "@chakra-ui/react";
 
 import { useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks/transactions";
@@ -39,6 +40,7 @@ import useThrottle from "../UtilComps/UseThrottle";
 
 import { ethers } from "ethers";
 import { ABIS } from "../EVM/ABIs";
+import WalletDataNFTEVM from "./WalletDataNFTEVM";
 
 interface PropsType {
   tabState: number; // 1 for "Public Marketplace", 2 for "My Data NFTs",
@@ -51,7 +53,6 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
   const navigate = useNavigate();
   const { chainMeta: _chainMeta } = useChainMeta() as any;
   const { hasPendingTransactions, pendingTransactions } = useGetPendingTransactions();
-
   const [itheumPrice, setItheumPrice] = useState<number | undefined>();
   const [loadingOffers, setLoadingOffers] = useState<boolean>(false);
   const [selectedOfferIndex, setSelectedOfferIndex] = useState<number>(-1); // no selection
@@ -163,12 +164,17 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
       const _metadatas: DataNftMetadataType[] = [];
 
       for (let i = 0; i < _allItems.length; i++) {
-        if (scMetaMap[_allItems[i].tokenId].transferable === 1) {
+        ///if we are on my page I only want the metadatas where the logged in address is owner of
+        if (
+          _chainMeta.loggedInAddress && location.pathname === "/datanfts/marketplace/market/my"
+            ? scMetaMap[_allItems[i].tokenId].transferable === 1 && _allItems[i].ownerAddress === _chainMeta.loggedInAddress
+            : scMetaMap[_allItems[i].tokenId].transferable === 1
+        ) {
           _metadatas.push({
             index: _allItems[i].tokenId,
             id: _allItems[i].tokenId,
             nftImgUrl: _allItems[i].image,
-            dataPreview: "",
+            dataPreview: "", // we need this for preview data button
             dataStream: "",
             dataMarshal: "",
             tokenName: "",
@@ -192,8 +198,13 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
       setNftMetadatasLoading(false);
 
       const forSaleItems = _dataNfts?.filter((item: any) => scMetaMap[item.index].transferable === 1);
-      setFilteredItems(forSaleItems);
 
+      if (_chainMeta.loggedInAddress && location.pathname === "/datanfts/marketplace/market/my") {
+        const myListedDataNfts = forSaleItems?.filter((item: any) => item.owner === _chainMeta.loggedInAddress);
+        setFilteredItems(myListedDataNfts);
+      } else {
+        setFilteredItems(forSaleItems);
+      }
       // end loading offers
       setLoadingOffers(false);
     });
@@ -237,7 +248,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
         </Heading>
 
         <Box position="relative">
-          <Tabs pt={10}>
+          <Tabs pt={10} index={tabState - 1}>
             <TabList justifyContent={{ base: "start", lg: "space-between" }} overflow={{ base: "scroll", md: "unset", lg: "unset" }}>
               <Flex>
                 <Tab
@@ -247,6 +258,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                   fontSize={{ base: "sm", md: "md" }}
                   onClick={() => {
                     if (hasPendingTransactions) return;
+                    setCurrentPage(1);
                     navigate("/datanfts/marketplace/market");
                   }}>
                   <Flex ml="4.7rem" alignItems="center" py={3}>
@@ -258,11 +270,11 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                 </Tab>
                 <Tab
                   _selected={{ borderBottom: "5px solid", borderBottomColor: "teal.200" }}
-                  isDisabled={true}
                   fontSize={{ base: "sm", md: "md" }}
                   onClick={() => {
                     if (hasPendingTransactions) return;
-                    navigate("/datanfts/marketplace/my");
+                    setCurrentPage(1);
+                    navigate("/datanfts/marketplace/market/my");
                   }}>
                   {_chainMeta.loggedInAddress && (
                     <Flex ml="4.7rem" alignItems="center" py={3}>
@@ -315,26 +327,33 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                           currentPageMetadatas.length > 0 &&
                           !loadingOffers &&
                           !nftMetadatasLoading &&
-                          !(_chainMeta.loggedInAddress && _chainMeta.loggedInAddress == item?.owner) ? (
-                            <MarketplaceLowerCard
-                              nftMetadatas={currentPageMetadatas}
-                              index={index}
-                              item={item}
-                              offers={offers}
-                              itheumPrice={itheumPrice}
-                              marketRequirements={marketRequirements}
-                              setMenuItem={setMenuItem}
-                              onRefreshTokenBalance={onRefreshTokenBalance}
-                            />
+                          !(_chainMeta.loggedInAddress && _chainMeta.loggedInAddress === item?.owner) ? ( // not owner
+                            <HStack mt="30px">
+                              <Button
+                                size="sm"
+                                colorScheme="teal"
+                                w="full"
+                                onClick={() => {
+                                  //accessDataStream(item.dataMarshal, item.id, item.dataStream);
+                                }}>
+                                View Data
+                              </Button>
+                              <Button
+                                size="sm"
+                                colorScheme="teal"
+                                w="full"
+                                variant="outline"
+                                onClick={() => {
+                                  console.log("THE PREVIEW " + item.dataPreview);
+                                  window.open(item.dataPreview);
+                                }}>
+                                <Text py={3} color={colorMode === "dark" ? "white" : "black"}>
+                                  Preview Data
+                                </Text>
+                              </Button>
+                            </HStack>
                           ) : (
-                            <MyListedDataLowerCard
-                              index={index}
-                              offers={currentPageItems}
-                              nftMetadatas={currentPageMetadatas}
-                              itheumPrice={itheumPrice}
-                              marketRequirements={marketRequirements}
-                              maxPaymentFeeMap={maxPaymentFeeMap}
-                            />
+                            <></>
                           )}
                         </UpperCardComponentEVM>
                       ))}
@@ -342,7 +361,48 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                 )}
               </TabPanel>
               <TabPanel mt={2} width={"full"}>
-                <Text>Noting here yet...</Text>
+                {!loadingOffers && !nftMetadatasLoading && offers.length === 0 ? (
+                  <Text>No data yet...</Text>
+                ) : (
+                  <SimpleGrid
+                    columns={{ sm: 1, md: 2, lg: 3, xl: 4 }}
+                    spacingY={4}
+                    mx={{ base: 0, "2xl": "24 !important" }}
+                    mt="5 !important"
+                    justifyItems={"center"}>
+                    {offers.length > 0 &&
+                      currentPageItems?.map((item, index) => (
+                        <UpperCardComponentEVM
+                          key={index}
+                          nftImageLoading={oneNFTImgLoaded && !loadingOffers}
+                          imageUrl={currentPageMetadatas[index]?.nftImgUrl || ""}
+                          setNftImageLoaded={setOneNFTImgLoaded}
+                          nftMetadatas={currentPageMetadatas}
+                          marketRequirements={marketRequirements}
+                          item={item}
+                          userData={userData}
+                          index={index}
+                          marketFreezedNonces={marketFreezedNonces}
+                          openNftDetailsDrawer={openNftDetailsDrawer}
+                          itheumPrice={itheumPrice}>
+                          {location.pathname.includes(marketplace + "/my") &&
+                            currentPageMetadatas.length > 0 &&
+                            !loadingOffers &&
+                            !nftMetadatasLoading &&
+                            _chainMeta.loggedInAddress && (
+                              <MyListedDataLowerCard
+                                index={index}
+                                offers={currentPageItems}
+                                nftMetadatas={currentPageMetadatas}
+                                itheumPrice={itheumPrice}
+                                marketRequirements={marketRequirements}
+                                maxPaymentFeeMap={maxPaymentFeeMap}
+                              />
+                            )}
+                        </UpperCardComponentEVM>
+                      ))}
+                  </SimpleGrid>
+                )}
               </TabPanel>
             </TabPanels>
           </Tabs>

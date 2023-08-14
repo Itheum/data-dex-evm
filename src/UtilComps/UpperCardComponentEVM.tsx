@@ -1,5 +1,6 @@
 import React, { Dispatch, FC, SetStateAction } from "react";
 import { ExternalLinkIcon } from "@chakra-ui/icons";
+
 import {
   Box,
   Flex,
@@ -28,6 +29,8 @@ import { convertToLocalString, transformDescription } from "../libs/util2";
 import { DataNftMetadataType, ItemType, MarketplaceRequirementsType } from "../MultiversX/typesEVM";
 import { useChainMeta } from "../store/ChainMetaContext";
 import blueTickIcon from "img/creator-verified.png";
+import { itheumTokenRoundUtilExtended } from "libs/util";
+import { ethers } from "ethers";
 
 type UpperCardComponentProps = {
   nftImageLoading: boolean;
@@ -243,7 +246,11 @@ const UpperCardComponentEVM: FC<UpperCardComponentProps> = (props) => {
                   {/* {`Listed: ${item?.quantity} (max supply: ${nftMetadatas[index]?.supply})`} */}
                 </Box>
               )}
-
+              <Box fontWeight="bold" fontSize="md">{`Unlock Fee: ${
+                nftMetadatas[index]?.feeInTokens === -2
+                  ? "Loading..."
+                  : itheumTokenRoundUtilExtended(nftMetadatas[index]?.feeInTokens, 18, ethers.BigNumber, true)
+              } ITHEUM`}</Box>
               {_chainMeta.loggedInAddress && <>{children}</>}
             </>
           )}
