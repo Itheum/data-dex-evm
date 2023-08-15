@@ -311,7 +311,6 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
         <Heading size="1rem" opacity=".7" fontWeight="light" px={{ base: 10, lg: 24 }} textAlign={{ base: "center", lg: "start" }}>
           Explore and discover new Data NFTs direct from Data Creators and peer-to-peer traders
         </Heading>
-
         <Box position="relative">
           <Tabs pt={10} index={tabState - 1}>
             <TabList justifyContent={{ base: "start", lg: "space-between" }} overflow={{ base: "scroll", md: "unset", lg: "unset" }}>
@@ -351,15 +350,17 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                   )}
                 </Tab>
               </Flex>
-              <Flex mr="4.7rem">
-                <CustomPagination
-                  pageCount={pageCount}
-                  pageIndex={currentPage - 1}
-                  pageSize={pageSize}
-                  gotoPage={onGotoPage}
-                  disabled={hasPendingTransactions}
-                />
-              </Flex>
+              {!loadingOffers && !nftMetadatasLoading && (
+                <Flex mr="4.7rem">
+                  <CustomPagination
+                    pageCount={pageCount}
+                    pageIndex={currentPage - 1}
+                    pageSize={pageSize}
+                    gotoPage={onGotoPage}
+                    disabled={hasPendingTransactions}
+                  />
+                </Flex>
+              )}
             </TabList>
 
             <TabPanels>
@@ -478,7 +479,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
 
           {
             /* show bottom pagination only if offers exist */
-            offers.length > 0 && (
+            offers.length > 0 && !loadingOffers && !nftMetadatasLoading && (
               <Flex justifyContent={{ base: "center", md: "center" }} py="5">
                 <CustomPagination
                   pageCount={pageCount}
@@ -490,7 +491,10 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
               </Flex>
             )
           }
-        </Box>
+        </Box>{" "}
+        {(loadingOffers || nftMetadatasLoading) && (
+          <Spinner position="absolute" color="teal" size="lg" top="50%" left="50%" transform="translate(-50%, -50%)" />
+        )}
       </Stack>
 
       {offerForDrawer && (
