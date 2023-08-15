@@ -76,7 +76,6 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
   const { colorMode } = useColorMode();
   const { chainMeta: _chainMeta } = useChainMeta();
   const { address } = useGetAccountInfo();
-  console.log("THE ADDRESS ", address);
   const { hasPendingTransactions } = useGetPendingTransactions();
   const toast = useToast();
   const { isOpen: isAccessProgressModalOpen, onOpen: onAccessProgressModalOpen, onClose: onAccessProgressModalClose } = useDisclosure();
