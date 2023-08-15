@@ -76,6 +76,7 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
   const { colorMode } = useColorMode();
   const { chainMeta: _chainMeta } = useChainMeta();
   const { address } = useGetAccountInfo();
+  console.log("THE ADDRESS ", address);
   const { hasPendingTransactions } = useGetPendingTransactions();
   const toast = useToast();
   const { isOpen: isAccessProgressModalOpen, onOpen: onAccessProgressModalOpen, onClose: onAccessProgressModalClose } = useDisclosure();
@@ -389,9 +390,9 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
             </Box> */}
 
             <Stack backgroundColor="none" display="flex" flexDirection="column" justifyContent="flex-start" alignItems="flex-start" my="2" height="6rem">
-              <Badge borderRadius="md" px="3" py="1" mt="1" colorScheme="teal">
+              <Badge borderRadius="md" px="3" py="1" mt="1" colorScheme={item.creator !== _chainMeta.loggedInAddress ? "teal" : "blue"}>
                 <Text fontSize={"sm"} fontWeight="semibold">
-                  You are the {item.creator !== address ? "Owner" : "Creator"}
+                  You are the {item.creator !== _chainMeta.loggedInAddress ? "Owner" : "Creator"}
                 </Text>
               </Badge>
 
