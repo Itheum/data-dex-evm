@@ -1300,7 +1300,7 @@ export default function MintDataEVM({ onRfMount, dataCATAccount, setMenuItem }: 
                           Data NFT Marketplace, where your creator royalties will ALWAYS be paid to you.
                         </Text>
                         <Text fontWeight="bold" mt="5">
-                          Toggle to yes, if you want your Data NFT tradable in 3rd party marketplaces.
+                          Make externally tradable on 3rd party marketplaces (like OpenSea)
                         </Text>
                         <Switch
                           mt="10px"

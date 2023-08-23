@@ -140,7 +140,7 @@ const MyListedDataLowerCard: FC<MyListedDataLowerCardProps> = ({ offers, index, 
   return (
     <>
       <Button
-        my="3"
+        mt="3"
         size="sm"
         colorScheme="teal"
         variant="outline"
