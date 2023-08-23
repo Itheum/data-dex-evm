@@ -220,10 +220,11 @@ export default function HomeMx({ setMenuItem, dataCATAccount, onRfMount, onRefre
                   <Text fontSize="md" color="#929497" pb={5}>
                     Get some free {CHAIN_TOKEN_SYMBOL(_chainMeta.networkId)} tokens to try DEX features
                   </Text>
-                  Progress
+
                   {txHashFaucet && (
                     <Stack>
-                      <Progress colorScheme="teal" hasStripe value={txConfirmationFaucet} />
+                      <Text>Progress</Text>
+                      <Progress isAnimated={true} colorScheme="teal" hasStripe value={txConfirmationFaucet} />
 
                       <HStack>
                         <Text fontSize="sm">Transaction </Text>

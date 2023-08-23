@@ -1,7 +1,7 @@
 import React, { FC, useEffect, useState } from "react";
 import { Button, HStack, Text, useDisclosure, useColorMode, Box } from "@chakra-ui/react";
 import ProcureDataNFTModal from "./ProcureDataNFTModalEVM";
-import { itheumTokenRoundUtilExtended } from "../libs/util";
+import { itheumTokenRoundUtilExtended } from "libs/util";
 import { DataNftMetadataType, ItemType, MarketplaceRequirementsType, OfferType } from "../MultiversX/typesEVM";
 import { useChainMeta } from "../store/ChainMetaContext";
 import { ethers } from "ethers";
@@ -40,7 +40,7 @@ const MarketplaceLowerCardEVM: FC<MarketplaceLowerCardProps> = ({
       {!isMyNft && nftMetadatas[index].transferable === 1 ? (
         <HStack borderTop="solid 1px" pt="5px">
           <Box>
-            <Box>{`Fee In Tokens: ${
+            <Box fontWeight="bold" fontSize="md">{`Unlock Fee: ${
               nftMetadatas[index]?.feeInTokens === -2
                 ? "Loading..."
                 : itheumTokenRoundUtilExtended(nftMetadatas[index]?.feeInTokens, 18, ethers.BigNumber, true)

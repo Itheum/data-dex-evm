@@ -38,6 +38,11 @@ import {
   ModalCloseButton,
   Spinner,
   useColorMode,
+  Switch,
+  Spacer,
+  useBreakpointValue,
+  Tooltip,
+  Progress,
 } from "@chakra-ui/react";
 import { useGetAccountInfo, useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks";
 import imgGuidePopup from "img/guide-unblock-popups.png";
@@ -53,8 +58,10 @@ import { useChainMeta } from "store/ChainMetaContext";
 import ShortAddress from "UtilComps/ShortAddress";
 import ListDataNFTModal from "./ListDataNFTModal";
 import blueTickIcon from "img/creator-verified.png";
+import { useConnectWallet } from "@web3-onboard/react";
 
 import { ethers } from "ethers";
+import { ABIS } from "../EVM/ABIs";
 
 export type WalletDataNFTMxPropType = {
   hasLoaded: boolean;
@@ -92,6 +99,105 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
   const [price, setPrice] = useState(10);
   const [priceError, setPriceError] = useState("");
   const [itheumPrice, setItheumPrice] = useState<number | undefined>();
+
+  const [istradeable, setIstradeable] = useState(false);
+  const [isTransferable, setIsTransferable] = useState(false);
+  const [isUpdatetradeableDisabled, setIsUpdatetradeableDisabled] = useState(true);
+  const [isUpdateTransferableDisabled, setIsUpdateTransferableDisabled] = useState(true);
+  const modelSize = useBreakpointValue({ base: "xs", md: "xl" });
+  const { isOpen: isUpdateModalOpen, onOpen: onUpdateModalOpen, onClose: onUpdateModalClose } = useDisclosure();
+  const [updatePropertyWorking, setUpdatePropertyWorking] = useState(false);
+  const [txConfirmationUpdateProperty, setTxConfirmationUpdateProperty] = useState(0);
+  const [txHashUpdateProperty, setTxHashUpdateProperty] = useState<string>("");
+  const [txErrorUpdateProperty, setTxErrorUpdateProperty] = useState<any | null>(null);
+  const [nftImageLoaded, setNftImageLoaded] = useState(false);
+
+  useEffect(() => {
+    if (txErrorUpdateProperty) {
+      setUpdatePropertyWorking(false);
+    } else {
+      if (txHashUpdateProperty && txConfirmationUpdateProperty === 100) {
+        toast({
+          title: `Congrats! You have succesfully updated the property!`,
+          status: "success",
+          duration: 6000,
+          isClosable: true,
+        });
+
+        resetUpdatePropertyState();
+        onUpdateModalClose();
+      }
+    }
+  }, [txConfirmationUpdateProperty, txHashUpdateProperty, txErrorUpdateProperty]);
+
+  const web3_updateProperty = async (propertyWantedToUpdate: string) => {
+    setUpdatePropertyWorking(true);
+
+    const web3Signer = _chainMeta.ethersProvider.getSigner();
+    const dnftContract = new ethers.Contract(_chainMeta.contracts.dnft, ABIS.dNFT, web3Signer);
+
+    try {
+      const txResponse =
+        propertyWantedToUpdate === "tradeable"
+          ? await dnftContract.setDataNFTSecondaryTradeable(item.id, !item.secondaryTradeable) // tradeable
+          : await dnftContract.setDataNFTTransferable(item.id, !item.transferable); // Transferable
+
+      // show a nice loading animation to user
+      setTxHashUpdateProperty(`https://shibuya.subscan.io/tx/${txResponse.hash}`);
+
+      await sleep(2);
+      setTxConfirmationUpdateProperty(40);
+
+      // wait for 1 confirmation from ethers
+      const txReceipt = await txResponse.wait();
+
+      setTxConfirmationUpdateProperty(60);
+      await sleep(2);
+
+      if (txReceipt.status) {
+        propertyWantedToUpdate === "tradeable" ? setIsUpdatetradeableDisabled(true) : setIsUpdateTransferableDisabled(true);
+
+        setTxConfirmationUpdateProperty(100);
+      } else {
+        const txErr = new Error(
+          `Data NFT Contract Error on method ${propertyWantedToUpdate === "tradeable" ? "setDataNFTSecondaryTradeable" : "setDataNFTTransferable"}`
+        );
+        setTxErrorUpdateProperty(txErr);
+      }
+    } catch (e) {
+      console.log(e);
+
+      setTxErrorUpdateProperty(e);
+    }
+  };
+
+  function resetUpdatePropertyState() {
+    setUpdatePropertyWorking(false);
+    setTxConfirmationUpdateProperty(0);
+    setTxHashUpdateProperty("");
+    setTxErrorUpdateProperty(null);
+  }
+
+  const handleToggletradeable = () => {
+    setIstradeable(!istradeable);
+    setIsUpdatetradeableDisabled(!isUpdatetradeableDisabled);
+  };
+  const handleToggleTransferable = () => {
+    setIsTransferable(!isTransferable);
+    setIsUpdateTransferableDisabled(!isUpdateTransferableDisabled);
+  };
+  useEffect(() => {
+    item.secondaryTradeable === 1 ? setIstradeable(true) : setIstradeable(false);
+  }, [item.secondaryTradeable]);
+  useEffect(() => {
+    item.transferable === 1 ? setIsTransferable(true) : setIsTransferable(false);
+  }, [item.transferable]);
+
+  const handleUpdateProperty = async (propertyWantedToUpdate: string) => {
+    setTxErrorUpdateProperty(null);
+    web3_updateProperty(propertyWantedToUpdate);
+    onUpdateModalOpen();
+  };
 
   // useEffect(() => {
   //   getItheumPrice();
@@ -271,7 +377,7 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
                 <HStack>
                   {item.creator === "0x950c869b1af2543154bd668d83188c1bc77bf82c" && <Image h="20px" src={blueTickIcon} />}
                   Creator: <ShortAddress address={item.creator} fontSize="md"></ShortAddress>
-                  <Link href={`${CHAIN_TX_VIEWER[_chainMeta.networkId as keyof typeof CHAIN_TX_VIEWER]}/accounts/${item.creator}`} isExternal>
+                  <Link href={`${CHAIN_TX_VIEWER[_chainMeta.networkId as keyof typeof CHAIN_TX_VIEWER]}/account/${item.creator}`} isExternal>
                     <ExternalLinkIcon ml="5px" fontSize="sm" />
                   </Link>
                 </HStack>
@@ -282,7 +388,7 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
               {`Creation time: ${moment(item.creationTime).format(uxConfig.dateStr)}`}
             </Box> */}
 
-            <Stack display="flex" flexDirection="column" justifyContent="flex-start" alignItems="flex-start" my="2" height="7rem">
+            <Stack backgroundColor="none" display="flex" flexDirection="column" justifyContent="flex-start" alignItems="flex-start" my="2" height="6rem">
               <Badge borderRadius="md" px="3" py="1" mt="1" colorScheme="teal">
                 <Text fontSize={"sm"} fontWeight="semibold">
                   You are the {item.creator !== address ? "Owner" : "Creator"}
@@ -307,44 +413,79 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
                 Burn
               </Button> */}
             </Stack>
-            <Box fontSize="md" fontWeight="normal" my={2}>
-              {`Royalty: ${item.royalties === -2 ? "Loading..." : item.royalties}%`}
 
-              <HStack>
-                <Text>Tradable: </Text>
-                `Tradable: $
-                {item.secondaryTradeable === -2
-                  ? "Loading..."
-                  : (item.secondaryTradeable === 1 && (
-                      <Badge borderRadius="sm" colorScheme="teal">
-                        Yes
-                      </Badge>
-                    )) || (
-                      <Badge borderRadius="sm" colorScheme="red">
-                        No
-                      </Badge>
-                    )}
-              </HStack>
-              <HStack>
-                <Text>Transferable: </Text>
-                {item.transferable === -2
-                  ? "Loading..."
-                  : (item.transferable === 1 && (
-                      <Badge borderRadius="sm" colorScheme="teal">
-                        Yes
-                      </Badge>
-                    )) || (
-                      <Badge borderRadius="sm" colorScheme="red">
-                        No
-                      </Badge>
-                    )}
-              </HStack>
+            <Box backgroundColor="none" fontSize="md" fontWeight="normal" my={2}>
+              <Text fontWeight="bold" fontSize="md">{`Royalty: ${item.royalties === -2 ? "Loading..." : item.royalties}%`}</Text>
 
-              {`Balance: ${item.balance} (Max supply: ${item.supply})`}
+              <Box my="10px">
+                <HStack>
+                  <Tooltip label={labels.WHAT_IS_TRADABLE}>
+                    <Text fontSize="sm" w="75px">
+                      Externally Tradable:{" "}
+                    </Text>
+                  </Tooltip>
+                  `Tradable: $
+                  {item.secondaryTradeable === -2 ? (
+                    "Loading..."
+                  ) : (
+                    <Badge borderRadius="sm" colorScheme={istradeable ? "teal" : "red"}>
+                      {istradeable ? "Yes" : "No"}
+                    </Badge>
+                  )}
+                  {item.creator === _chainMeta.loggedInAddress && (
+                    <>
+                      <Spacer />
+                      <Switch colorScheme="teal" isChecked={istradeable} onChange={handleToggletradeable} />
+                      <Button
+                        size="xsm"
+                        p="1"
+                        fontSize={"xs"}
+                        colorScheme="teal"
+                        ml={2}
+                        isDisabled={isUpdatetradeableDisabled}
+                        onClick={() => handleUpdateProperty("tradeable")}
+                        _active={{
+                          bg: "#dddfe2",
+                          transform: "scale(0.98)",
+                          borderColor: "#bec3c9",
+                        }}>
+                        Update
+                      </Button>
+                    </>
+                  )}
+                </HStack>
+                <HStack mt="1">
+                  <Tooltip label={labels.WHAT_IS_TRANSFERABLE}>
+                    <Text fontSize="sm" w="75px">
+                      List for Trade:{" "}
+                    </Text>
+                  </Tooltip>
+                  {item.transferable === -2 ? (
+                    "Loading..."
+                  ) : (
+                    <Badge borderRadius="sm" colorScheme={isTransferable ? "teal" : "red"}>
+                      {isTransferable ? "Yes" : "No"}
+                    </Badge>
+                  )}
+                  <Spacer />
+                  <Switch colorScheme="teal" isChecked={isTransferable} onChange={handleToggleTransferable} />
+                  <Button
+                    size="xsm"
+                    p="1"
+                    fontSize="xs"
+                    colorScheme="teal"
+                    ml={2}
+                    isDisabled={isUpdateTransferableDisabled}
+                    onClick={() => handleUpdateProperty("transferable")}>
+                    Update
+                  </Button>
+                </HStack>
+              </Box>
+              {/* {`Balance: ${item.balance} (Max supply: ${item.supply})`} */}
             </Box>
 
             <HStack borderTop="solid 1px" pt="5px">
-              <Box>{`Fee In Tokens: ${
+              <Box fontWeight="bold" fontSize="md">{`Unlock Fee: ${
                 item.feeInTokens === -2 ? "Loading..." : itheumTokenRoundUtilExtended(item.feeInTokens, 18, ethers.BigNumber, true)
               } ITHEUM`}</Box>
             </HStack>
@@ -465,6 +606,74 @@ export default function WalletDataNFTMX(item: WalletDataNFTMxPropType) {
           </Box>
         </Flex>
 
+        <Modal size={modelSize} isOpen={isUpdateModalOpen} onClose={onUpdateModalClose} closeOnEsc={false} closeOnOverlayClick={false}>
+          <ModalOverlay bg="#181818e0">
+            <ModalContent bg="#181818">
+              <ModalHeader>
+                <HStack>
+                  <Stack>
+                    <Text fontSize={"lg"} fontWeight={"normal"}>
+                      Updating the Externally Tradable property of
+                    </Text>
+                    <Text p={2} bg={"blackAlpha.300"} fontSize={"lg"} fontWeight={"semibold"}>
+                      {item.title}
+                    </Text>
+                  </Stack>
+                  <Spacer></Spacer>
+                  <Skeleton isLoaded={nftImageLoaded}>
+                    <Image
+                      p={4}
+                      borderRadius="5px"
+                      height={"150px"}
+                      width="150px"
+                      src={item.nftImgUrl}
+                      onLoad={() => {
+                        setNftImageLoaded(true);
+                      }}
+                    />
+                  </Skeleton>
+                </HStack>
+              </ModalHeader>
+
+              <ModalBody>
+                {updatePropertyWorking && (
+                  <Stack p={2} bg={"blackAlpha.400"}>
+                    <Text>Progress </Text>
+                    <Stack p={2}>
+                      <Progress size={"lg"} colorScheme="teal" hasStripe isAnimated={true} value={txConfirmationUpdateProperty} />
+
+                      <HStack>
+                        <Text fontSize="sm">Transaction </Text>
+                        <Link fontSize="sm" href={txHashUpdateProperty} isExternal>
+                          <ExternalLinkIcon mx="2px" />
+                        </Link>
+                      </HStack>
+                    </Stack>
+                  </Stack>
+                )}
+
+                {txErrorUpdateProperty && (
+                  <Alert status="error">
+                    <AlertIcon />
+                    {txErrorUpdateProperty.message && <AlertTitle fontSize="md">{txErrorUpdateProperty.message}</AlertTitle>}
+                    <CloseButton position="absolute" right="8px" top="8px" onClick={onUpdateModalClose} />
+                  </Alert>
+                )}
+                {txErrorUpdateProperty && "data" in txErrorUpdateProperty && "message" in txErrorUpdateProperty.data && (
+                  <Alert status="error">
+                    <AlertIcon />
+                    {txErrorUpdateProperty.data.message && <AlertTitle fontSize="md">{txErrorUpdateProperty.data.message}</AlertTitle>}
+                  </Alert>
+                )}
+                <Flex justifyContent="end" mt="8 !important">
+                  <Button mx="3" colorScheme="teal" size="sm" variant="outline" isDisabled={updatePropertyWorking} onClick={onUpdateModalClose}>
+                    Cancel
+                  </Button>
+                </Flex>
+              </ModalBody>
+            </ModalContent>
+          </ModalOverlay>
+        </Modal>
         <Box
           position="absolute"
           top="0"

@@ -38,7 +38,7 @@ export default function MyDataNFTsEVM({ onRfMount }: { onRfMount: any }) {
   const { chainMeta: _chainMeta } = useChainMeta();
   const [dataNfts, setDataNfts] = useState<DataNftType[]>(() => {
     const _dataNfts: DataNftType[] = [];
-    for (let index = 0; index < 5; index++) {
+    for (let index = 0; index < 8; index++) {
       _dataNfts.push(createDataNftType());
     }
     return _dataNfts;
