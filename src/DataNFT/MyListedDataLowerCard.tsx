@@ -139,60 +139,6 @@ const MyListedDataLowerCard: FC<MyListedDataLowerCardProps> = ({ offers, index, 
 
   return (
     <>
-      <Button
-        mt="3"
-        size="sm"
-        colorScheme="teal"
-        variant="outline"
-        onClick={() => {
-          window.open(nftMetadatas[index].dataPreview);
-        }}>
-        <Text py={3} color={colorMode === "dark" ? "white" : "black"}>
-          Preview Data
-        </Text>
-      </Button>
-
-      <Flex justifyContent="space-between" mt="2" gap="2">
-        <Button
-          size="sm"
-          colorScheme="teal"
-          w="full"
-          isDisabled={hasPendingTransactions}
-          onClick={() => {
-            setSelectedOfferIndex(index);
-            setDelistAmount(1);
-            setDelistModalState(0);
-            onDelistModalOpen();
-          }}>
-          De-List
-        </Button>
-
-        <Button
-          size="sm"
-          colorScheme="teal"
-          w="full"
-          isDisabled={hasPendingTransactions}
-          onClick={() => {
-            setSelectedOfferIndex(index);
-            if (marketRequirements) {
-              setNewListingPrice(
-                convertWeiToEsdt(
-                  new BigNumber(offers[index].wanted_token_amount)
-                    .multipliedBy(amountOfTokens[index])
-                    .multipliedBy(10000)
-                    .div(10000 + marketRequirements.buyer_fee),
-                  tokenDecimals(offers[index].wanted_token_identifier)
-                ).toNumber()
-              );
-            } else {
-              setNewListingPrice(0);
-            }
-            onUpdatePriceModalOpen();
-          }}>
-          Update Price
-        </Button>
-      </Flex>
-
       {selectedOfferIndex >= 0 && selectedOfferIndex < offers.length && (
         <Modal isOpen={isDelistModalOpen} onClose={onDelistModalClose} closeOnEsc={false} closeOnOverlayClick={false}>
           <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(10px) hue-rotate(90deg)" />
