@@ -38,11 +38,19 @@ export default function MyDataNFTsEVM({ onRfMount }: { onRfMount: any }) {
   const { chainMeta: _chainMeta } = useChainMeta();
   const [dataNfts, setDataNfts] = useState<DataNftType[]>(() => {
     const _dataNfts: DataNftType[] = [];
-    for (let index = 0; index < 5; index++) {
+    for (let index = 0; index < 8; index++) {
       _dataNfts.push(createDataNftType());
     }
     return _dataNfts;
   });
+  const [purchasedDataNfts, setPurchasedDataNfts] = useState<DataNftType[]>(() => {
+    const _dataNfts: DataNftType[] = [];
+    for (let index = 0; index < 8; index++) {
+      _dataNfts.push(createDataNftType());
+    }
+    return _dataNfts;
+  });
+
   const [oneNFTImgLoaded, setOneNFTImgLoaded] = useState(false);
   const [maxPaymentFeeMap, setMaxPaymentFeeMap] = useState<RecordStringNumberType>({});
   const [userData, setUserData] = useState<UserDataType | undefined>(undefined);
@@ -61,7 +69,8 @@ export default function MyDataNFTsEVM({ onRfMount }: { onRfMount: any }) {
     {
       tabName: "Purchased",
       icon: MdOutlineShoppingBag,
-      isDisabled: true,
+      isDisabled: false,
+      pieces: purchasedDataNfts ? purchasedDataNfts.length : 0,
     },
     {
       tabName: "Favorite",
@@ -95,6 +104,7 @@ export default function MyDataNFTsEVM({ onRfMount }: { onRfMount: any }) {
     fetch(endpointMyDataNFTs, { method: "GET", headers: headers })
       .then((resp) => resp.json())
       .then((res) => {
+        console.log(res);
         if (res?.data?.items) {
           const dataNFTsRaw = res?.data?.items.filter((val: any) => {
             return (
@@ -156,14 +166,18 @@ export default function MyDataNFTsEVM({ onRfMount }: { onRfMount: any }) {
       }, {});
 
       // append the sc meta data like price, royalty etc to the master list
+
       _dataNfts.forEach((item: any) => {
         item.royalties = scMetaMap[item.id].royaltyInPercent;
         item.feeInTokens = scMetaMap[item.id].priceInItheum;
         item.transferable = scMetaMap[item.id].transferable;
         item.secondaryTradeable = scMetaMap[item.id].secondaryTradeable;
       });
-
+      const _purchasedDataNfts = _dataNfts.filter((dataNft: any) => {
+        return dataNft.creator !== _chainMeta.loggedInAddress;
+      });
       setDataNfts(_dataNfts);
+      setPurchasedDataNfts(_purchasedDataNfts);
     });
   }
 
@@ -253,7 +267,33 @@ export default function MyDataNFTsEVM({ onRfMount }: { onRfMount: any }) {
                 </Flex>
               )}
             </TabPanel>
-            <TabPanel>Nothing here yet...</TabPanel>
+            <TabPanel>
+              {purchasedDataNfts.length > 0 ? (
+                <SimpleGrid
+                  columns={{ sm: 1, md: 2, lg: 3, xl: 4 }}
+                  spacingY={4}
+                  mx={{ base: 0, "2xl": "24 !important" }}
+                  mt="5 !important"
+                  justifyItems={"center"}>
+                  {purchasedDataNfts.map((item, index) => (
+                    <WalletDataNFTEVM
+                      key={index}
+                      hasLoaded={oneNFTImgLoaded}
+                      setHasLoaded={setOneNFTImgLoaded}
+                      userData={userData}
+                      maxPayment={100}
+                      sellerFee={sellerFee || 0}
+                      openNftDetailsDrawer={openNftDetailsDrawer}
+                      {...item}
+                    />
+                  ))}
+                </SimpleGrid>
+              ) : (
+                <Flex>
+                  <NoDataHere />
+                </Flex>
+              )}{" "}
+            </TabPanel>
             <TabPanel>Nothing here yet...</TabPanel>
             <TabPanel>Nothing here yet...</TabPanel>
             <TabPanel>Nothing here yet...</TabPanel>

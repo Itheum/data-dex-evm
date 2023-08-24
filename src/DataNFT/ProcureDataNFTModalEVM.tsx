@@ -292,14 +292,14 @@ export default function ProcureDataNFTModalEVM(props: ProcureAccessModalProps) {
               {txNFTConfirmation > 0 && (
                 <Box mt="10px">
                   <Text fontSize="sm">Procuring Data NFT...</Text>
-                  <Progress colorScheme="teal" hasStripe value={txNFTConfirmation} />
+                  <Progress isAnimated={true} colorScheme="teal" hasStripe value={txNFTConfirmation} />
                 </Box>
               )}
 
               {txAllowanceConfirmation > 0 && (
                 <Box mt="10px">
                   <Text fontSize="sm">Approving spending allowance for purchase...</Text>
-                  <Progress colorScheme="teal" hasStripe value={txAllowanceConfirmation} />
+                  <Progress isAnimated={true} colorScheme="teal" hasStripe value={txAllowanceConfirmation} />
                 </Box>
               )}
 

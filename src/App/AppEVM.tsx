@@ -107,7 +107,8 @@ function App({
     if (_chainMeta?.networkId) {
       // const networkId = mxEnvironment === "mainnet" ? "E1" : "ED";
 
-      if (_chainMeta?.isEVMAuthenticated) {
+      // if the user has been on landing page and login
+      if (_chainMeta?.isEVMAuthenticated && pathname === "/") {
         setMenuItem(PATHS["home"]?.[0] as number);
         navigate("home");
       }
@@ -288,7 +289,12 @@ function App({
                 )) || <Route path="marketplace/market" element={<DataNFTMarketplaceMultiversX tabState={1} />} />}
 
                 <Route path="marketplace/market/:pageNumber" element={<DataNFTMarketplaceMultiversX tabState={1} />} />
-                <Route path="marketplace/my" element={<DataNFTMarketplaceMultiversX tabState={2} />} />
+                {(isEVMAuthenticated && (
+                  <Route
+                    path="marketplace/market/my"
+                    element={<DataNFTMarketplaceEVM tabState={2} setMenuItem={setMenuItem} onRefreshTokenBalance={itheumTokenBalanceUpdate} />}
+                  />
+                )) || <Route path="marketplace/my" element={<DataNFTMarketplaceMultiversX tabState={2} />} />}
                 <Route path="marketplace/my/:pageNumber" element={<DataNFTMarketplaceMultiversX tabState={2} />} />
               </Route>
 

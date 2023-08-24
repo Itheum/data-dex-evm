@@ -1,10 +1,15 @@
 import React, { FC, useEffect, useState } from "react";
+import { CheckCircleIcon, ExternalLinkIcon, InfoIcon } from "@chakra-ui/icons";
+
 import {
-  Button,
   Flex,
   Heading,
   HStack,
   Stack,
+  Image,
+  Alert,
+  AlertDescription,
+  AlertTitle,
   Text,
   CloseButton,
   Drawer,
@@ -23,14 +28,22 @@ import {
   TabPanels,
   useColorMode,
   useToast,
+  Button,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalHeader,
+  ModalOverlay,
+  ModalCloseButton,
+  Spinner,
+  AlertIcon,
 } from "@chakra-ui/react";
-import { useGetLoginInfo } from "@multiversx/sdk-dapp/hooks/account";
-import { useGetAccountInfo } from "@multiversx/sdk-dapp/hooks/account";
+import imgGuidePopup from "img/guide-unblock-popups.png";
+
 import { useGetPendingTransactions } from "@multiversx/sdk-dapp/hooks/transactions";
 import { FaStore, FaBrush } from "react-icons/fa";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import DataNFTDetails from "DataNFT/DataNFTDetails";
-import { sleep } from "libs/util";
 import { createNftId } from "libs/util2";
 import { DataNftMetadataType, ItemType, MarketplaceRequirementsType, OfferType, OfferTypeEVM } from "MultiversX/typesEVM";
 import { useChainMeta } from "store/ChainMetaContext";
@@ -42,6 +55,8 @@ import useThrottle from "../UtilComps/UseThrottle";
 
 import { ethers } from "ethers";
 import { ABIS } from "../EVM/ABIs";
+import WalletDataNFTEVM from "./WalletDataNFTEVM";
+import { sleep } from "libs/util";
 
 interface PropsType {
   tabState: number; // 1 for "Public Marketplace", 2 for "My Data NFTs",
@@ -52,15 +67,8 @@ interface PropsType {
 export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTokenBalance }) => {
   const { colorMode } = useColorMode();
   const navigate = useNavigate();
-  const { isLoggedIn: isMxLoggedIn } = useGetLoginInfo();
-  const { pageNumber } = useParams();
-  const pageIndex = pageNumber ? Number(pageNumber) : 0;
-
   const { chainMeta: _chainMeta } = useChainMeta() as any;
-  const itheumToken = _chainMeta?.contracts?.itheumToken || null;
-  const { address } = useGetAccountInfo();
   const { hasPendingTransactions, pendingTransactions } = useGetPendingTransactions();
-
   const [itheumPrice, setItheumPrice] = useState<number | undefined>();
   const [loadingOffers, setLoadingOffers] = useState<boolean>(false);
   const [selectedOfferIndex, setSelectedOfferIndex] = useState<number>(-1); // no selection
@@ -75,41 +83,87 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
   const [offerForDrawer, setOfferForDrawer] = useState<OfferType | undefined>();
 
   const [offers, setOffers] = useState<OfferType[]>([]);
-  const [items, setItems] = useState<ItemType[]>([
-    {
-      index: 0,
-      owner: "",
-      wanted_token_identifier: "",
-      wanted_token_amount: "",
-      wanted_token_nonce: 0,
-      offered_token_identifier: "",
-      offered_token_nonce: 0,
-      balance: 0,
-      supply: 0,
-      royalties: 0,
-      id: "",
-      dataPreview: "",
-      quantity: 0,
-      nonce: 0,
-      nftImgUrl: "",
-      title: "",
-      tokenName: "",
-      transferable: -2,
-      secondaryTradeable: -2,
-    },
-  ]);
+  const [filteredItems, setFilteredItems] = useState<ItemType[]>([]);
 
-  const [wantedTokenBalance, setWantedTokenBalance] = useState<string>("0");
-  const { isOpen: isDrawerOpenTradeStream, onOpen: onOpenDrawerTradeStream, onClose: onCloseDrawerTradeStream, getDisclosureProps } = useDisclosure();
+  const [currentPageItems, setCurrentPageItems] = useState<ItemType[]>([]);
+  const [currentPageMetadatas, setCurrentPageMetadatas] = useState<DataNftMetadataType[]>([]);
+
+  const { isOpen: isDrawerOpenTradeStream, onOpen: onOpenDrawerTradeStream, onClose: onCloseDrawerTradeStream } = useDisclosure();
+
+  ///view data button
+
+  const { isOpen: isAccessProgressModalOpen, onOpen: onAccessProgressModalOpen, onClose: onAccessProgressModalClose } = useDisclosure();
+  const [unlockAccessProgress, setUnlockAccessProgress] = useState({
+    s1: 0,
+    s2: 0,
+    s3: 0,
+  });
+  const [errUnlockAccessGeneric, setErrUnlockAccessGeneric] = useState<string>("");
+
+  const accessDataStream = async (dataMarshal: string, NFTId: string, dataStream: string) => {
+    /*
+      1) get a nonce from the data marshal (s1)
+      2) get user to sign the nonce and obtain signature (s2)
+      3) send the signature for verification from the marshal and open stream in new window (s3)
+    */
+
+    onAccessProgressModalOpen();
+
+    setUnlockAccessProgress((prevProgress) => ({ ...prevProgress, s1: 1 }));
+
+    await sleep(3);
+
+    setUnlockAccessProgress((prevProgress) => ({
+      ...prevProgress,
+      s2: 1,
+    }));
+
+    await sleep(3);
+
+    // auto download the file without ever exposing the url
+    const link = document.createElement("a");
+    link.target = "_blank";
+    link.setAttribute("target", "_blank");
+    link.href = dataStream; /// TODO FIND A WAY TO GET THE DATASTREAM,preview,marshal  FROM API or smart contract
+    link.dispatchEvent(new MouseEvent("click"));
+
+    setUnlockAccessProgress((prevProgress) => ({
+      ...prevProgress,
+      s3: 1,
+    }));
+  };
+
+  const cleanupAccessDataStreamProcess = () => {
+    setUnlockAccessProgress({ s1: 0, s2: 0, s3: 0 });
+    setErrUnlockAccessGeneric("");
+    onAccessProgressModalClose();
+  };
 
   // pagination
   const [pageCount, setPageCount] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(8);
+  const [currentPage, setCurrentPage] = useState<number>(1);
   const marketplace = "/datanfts/marketplace/market";
   const location = useLocation();
 
+  useEffect(() => {
+    setPageCount(Math.ceil(filteredItems.length / pageSize));
+  }, [filteredItems, pageSize]);
+
+  useEffect(() => {
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = currentPage * pageSize;
+
+    // Slice the arrays to get the items and metadatas that has to be displayed for the current page
+    const itemsForCurrentPage = filteredItems.slice(startIdx, endIdx);
+    const metadatasForCurrentPage = nftMetadatas.slice(startIdx, endIdx);
+    setCurrentPageMetadatas(metadatasForCurrentPage);
+    setCurrentPageItems(itemsForCurrentPage);
+  }, [currentPage, filteredItems]);
+
   const setPageIndex = (newPageIndex: number) => {
-    navigate(`/datanfts/marketplace/${tabState === 1 ? "market" : "my"}${newPageIndex > 0 ? "/" + newPageIndex : ""}`);
+    setCurrentPage(newPageIndex + 1);
+    //navigate(`/datanfts/marketplace/${tabState === 1 ? "market" : "my"}${newPageIndex > 0 ? "/" + newPageIndex : ""}`);
   };
 
   const onGotoPage = useThrottle((newPageIndex: number) => {
@@ -156,7 +210,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
           mergeSmartContractMetaData(_tokenIdAry, res.items, _dataNfts);
         });
     })();
-  }, [pageIndex, pageSize, tabState, hasPendingTransactions, _chainMeta.networkId]);
+  }, [tabState, hasPendingTransactions, _chainMeta.networkId]);
 
   function mergeSmartContractMetaData(_tokenIdAry: any, _allItems: any, _dataNfts: any) {
     // use the list of token IDs to get all the other needed details (price, royalty etc) from the smart contract
@@ -172,44 +226,50 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
         return sum;
       }, {});
 
-      // append the sc meta data like price, royalty etc to the master list
-      _dataNfts.forEach((item: any) => {
-        item.wanted_token_amount = scMetaMap[item.index].priceInItheum;
-      });
-
-      setItems(_dataNfts);
-
-      setNftMetadatasLoading(true);
-
       const _metadatas: DataNftMetadataType[] = [];
 
       for (let i = 0; i < _allItems.length; i++) {
-        _metadatas.push({
-          index: _allItems[i].tokenId,
-          id: _allItems[i].tokenId,
-          nftImgUrl: _allItems[i].image,
-          dataPreview: "",
-          dataStream: "",
-          dataMarshal: "",
-          tokenName: "",
-          creator: "", // we don't know who the creator is -- this info only comes via Covalent API for now
-          creationTime: new Date(), // we don't know who the creator is -- this info only comes via Covalent API for now
-          supply: 1,
-          balance: 1,
-          description: _allItems[i].description,
-          title: _allItems[i].name,
-          royalties: scMetaMap[_allItems[i].tokenId].royaltyInPercent,
-          nonce: 0,
-          collection: _allItems[i].contractAddress,
-          feeInTokens: scMetaMap[_allItems[i].tokenId].priceInItheum,
-          transferable: scMetaMap[_allItems[i].tokenId].transferable,
-          secondaryTradeable: scMetaMap[_allItems[i].tokenId].secondaryTradeable,
-        });
+        ///if we are on my page I only want the metadatas where the logged in address is owner of
+        if (
+          _chainMeta.loggedInAddress && location.pathname === "/datanfts/marketplace/market/my"
+            ? scMetaMap[_allItems[i].tokenId].transferable === 1 && _allItems[i].ownerAddress === _chainMeta.loggedInAddress
+            : scMetaMap[_allItems[i].tokenId].transferable === 1
+        ) {
+          _metadatas.push({
+            index: _allItems[i].tokenId,
+            id: _allItems[i].tokenId,
+            nftImgUrl: _allItems[i].image,
+            dataPreview: "", // we need this for preview data button
+            dataStream: "", // TODO FIND A WAY TO GET THE DATASTREAM,preview,marshal  FROM API or smart contract
+            dataMarshal: "", //now we are using this function to get that data, but only for a certain address:  getNftsOfACollectionForAnAddress
+            tokenName: "",
+            creator: "", // we don't know who the creator is -- this info only comes via Covalent API for now
+            creationTime: new Date(), // we don't know who the creator is -- this info only comes via Covalent API for now
+            supply: 1,
+            balance: 1,
+            description: _allItems[i].description,
+            title: _allItems[i].name,
+            royalties: scMetaMap[_allItems[i].tokenId].royaltyInPercent,
+            nonce: 0,
+            collection: _allItems[i].contractAddress,
+            feeInTokens: scMetaMap[_allItems[i].tokenId].priceInItheum,
+            transferable: scMetaMap[_allItems[i].tokenId].transferable,
+            secondaryTradeable: scMetaMap[_allItems[i].tokenId].secondaryTradeable,
+          });
+        }
       }
 
       setNftMetadatas(_metadatas);
       setNftMetadatasLoading(false);
 
+      const forSaleItems = _dataNfts?.filter((item: any) => scMetaMap[item.index].transferable === 1);
+
+      if (_chainMeta.loggedInAddress && location.pathname === "/datanfts/marketplace/market/my") {
+        const myListedDataNfts = forSaleItems?.filter((item: any) => item.owner === _chainMeta.loggedInAddress);
+        setFilteredItems(myListedDataNfts);
+      } else {
+        setFilteredItems(forSaleItems);
+      }
       // end loading offers
       setLoadingOffers(false);
     });
@@ -251,9 +311,8 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
         <Heading size="1rem" opacity=".7" fontWeight="light" px={{ base: 10, lg: 24 }} textAlign={{ base: "center", lg: "start" }}>
           Explore and discover new Data NFTs direct from Data Creators and peer-to-peer traders
         </Heading>
-
         <Box position="relative">
-          <Tabs pt={10}>
+          <Tabs pt={10} index={tabState - 1}>
             <TabList justifyContent={{ base: "start", lg: "space-between" }} overflow={{ base: "scroll", md: "unset", lg: "unset" }}>
               <Flex>
                 <Tab
@@ -263,6 +322,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                   fontSize={{ base: "sm", md: "md" }}
                   onClick={() => {
                     if (hasPendingTransactions) return;
+                    setCurrentPage(1);
                     navigate("/datanfts/marketplace/market");
                   }}>
                   <Flex ml="4.7rem" alignItems="center" py={3}>
@@ -274,11 +334,11 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                 </Tab>
                 <Tab
                   _selected={{ borderBottom: "5px solid", borderBottomColor: "teal.200" }}
-                  isDisabled={true}
                   fontSize={{ base: "sm", md: "md" }}
                   onClick={() => {
                     if (hasPendingTransactions) return;
-                    navigate("/datanfts/marketplace/my");
+                    setCurrentPage(1);
+                    navigate("/datanfts/marketplace/market/my");
                   }}>
                   {_chainMeta.loggedInAddress && (
                     <Flex ml="4.7rem" alignItems="center" py={3}>
@@ -290,9 +350,17 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                   )}
                 </Tab>
               </Flex>
-              <Flex mr="4.7rem">
-                <CustomPagination pageCount={pageCount} pageIndex={pageIndex} pageSize={pageSize} gotoPage={onGotoPage} disabled={hasPendingTransactions} />
-              </Flex>
+              {!loadingOffers && !nftMetadatasLoading && (
+                <Flex mr="4.7rem">
+                  <CustomPagination
+                    pageCount={pageCount}
+                    pageIndex={currentPage - 1}
+                    pageSize={pageSize}
+                    gotoPage={onGotoPage}
+                    disabled={hasPendingTransactions}
+                  />
+                </Flex>
+              )}
             </TabList>
 
             <TabPanels>
@@ -307,13 +375,13 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                     mt="5 !important"
                     justifyItems={"center"}>
                     {offers.length > 0 &&
-                      items?.map((item, index) => (
+                      currentPageItems?.map((item, index) => (
                         <UpperCardComponentEVM
                           key={index}
                           nftImageLoading={oneNFTImgLoaded && !loadingOffers}
-                          imageUrl={nftMetadatas[index]?.nftImgUrl || ""}
+                          imageUrl={currentPageMetadatas[index]?.nftImgUrl || ""}
                           setNftImageLoaded={setOneNFTImgLoaded}
-                          nftMetadatas={nftMetadatas}
+                          nftMetadatas={currentPageMetadatas}
                           marketRequirements={marketRequirements}
                           item={item}
                           userData={userData}
@@ -321,26 +389,41 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                           marketFreezedNonces={marketFreezedNonces}
                           openNftDetailsDrawer={openNftDetailsDrawer}
                           itheumPrice={itheumPrice}>
-                          {location.pathname.includes(marketplace) && nftMetadatas.length > 0 && !loadingOffers && !nftMetadatasLoading ? (
-                            <MarketplaceLowerCard
-                              nftMetadatas={nftMetadatas}
-                              index={index}
-                              item={item}
-                              offers={offers}
-                              itheumPrice={itheumPrice}
-                              marketRequirements={marketRequirements}
-                              setMenuItem={setMenuItem}
-                              onRefreshTokenBalance={onRefreshTokenBalance}
-                            />
+                          {location.pathname.includes(marketplace) &&
+                          currentPageMetadatas.length > 0 &&
+                          !loadingOffers &&
+                          !nftMetadatasLoading &&
+                          !(_chainMeta.loggedInAddress && _chainMeta.loggedInAddress === item?.owner) ? ( // not owner
+                            <HStack mt="30px">
+                              <Button
+                                size="sm"
+                                colorScheme="teal"
+                                w="full"
+                                onClick={() => {
+                                  accessDataStream(
+                                    currentPageMetadatas[index]?.dataMarshal,
+                                    currentPageMetadatas[index]?.id,
+                                    currentPageMetadatas[index]?.dataStream
+                                  );
+                                }}>
+                                View Data
+                              </Button>
+                              <Button
+                                size="sm"
+                                colorScheme="teal"
+                                w="full"
+                                variant="outline"
+                                onClick={() => {
+                                  console.log("THE PREVIEW " + item.dataPreview);
+                                  window.open(item.dataPreview);
+                                }}>
+                                <Text py={3} color={colorMode === "dark" ? "white" : "black"}>
+                                  Preview Data
+                                </Text>
+                              </Button>
+                            </HStack>
                           ) : (
-                            <MyListedDataLowerCard
-                              index={index}
-                              offers={items}
-                              nftMetadatas={nftMetadatas}
-                              itheumPrice={itheumPrice}
-                              marketRequirements={marketRequirements}
-                              maxPaymentFeeMap={maxPaymentFeeMap}
-                            />
+                            <></>
                           )}
                         </UpperCardComponentEVM>
                       ))}
@@ -348,20 +431,70 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                 )}
               </TabPanel>
               <TabPanel mt={2} width={"full"}>
-                <Text>Noting here yet...</Text>
+                {!loadingOffers && !nftMetadatasLoading && offers.length === 0 ? (
+                  <Text>No data yet...</Text>
+                ) : (
+                  <SimpleGrid
+                    columns={{ sm: 1, md: 2, lg: 3, xl: 4 }}
+                    spacingY={4}
+                    mx={{ base: 0, "2xl": "24 !important" }}
+                    mt="5 !important"
+                    justifyItems={"center"}>
+                    {offers.length > 0 &&
+                      currentPageItems?.map((item, index) => (
+                        <UpperCardComponentEVM
+                          key={index}
+                          nftImageLoading={oneNFTImgLoaded && !loadingOffers}
+                          imageUrl={currentPageMetadatas[index]?.nftImgUrl || ""}
+                          setNftImageLoaded={setOneNFTImgLoaded}
+                          nftMetadatas={currentPageMetadatas}
+                          marketRequirements={marketRequirements}
+                          item={item}
+                          userData={userData}
+                          index={index}
+                          marketFreezedNonces={marketFreezedNonces}
+                          openNftDetailsDrawer={openNftDetailsDrawer}
+                          itheumPrice={itheumPrice}>
+                          {location.pathname.includes(marketplace + "/my") &&
+                            currentPageMetadatas.length > 0 &&
+                            !loadingOffers &&
+                            !nftMetadatasLoading &&
+                            _chainMeta.loggedInAddress && (
+                              <MyListedDataLowerCard
+                                index={index}
+                                offers={currentPageItems}
+                                nftMetadatas={currentPageMetadatas}
+                                itheumPrice={itheumPrice}
+                                marketRequirements={marketRequirements}
+                                maxPaymentFeeMap={maxPaymentFeeMap}
+                              />
+                            )}
+                        </UpperCardComponentEVM>
+                      ))}
+                  </SimpleGrid>
+                )}
               </TabPanel>
             </TabPanels>
           </Tabs>
 
           {
             /* show bottom pagination only if offers exist */
-            offers.length > 0 && (
+            offers.length > 0 && !loadingOffers && !nftMetadatasLoading && (
               <Flex justifyContent={{ base: "center", md: "center" }} py="5">
-                <CustomPagination pageCount={pageCount} pageIndex={pageIndex} pageSize={pageSize} gotoPage={onGotoPage} disabled={hasPendingTransactions} />
+                <CustomPagination
+                  pageCount={pageCount}
+                  pageIndex={currentPage - 1}
+                  pageSize={pageSize}
+                  gotoPage={onGotoPage}
+                  disabled={hasPendingTransactions}
+                />
               </Flex>
             )
           }
-        </Box>
+        </Box>{" "}
+        {(loadingOffers || nftMetadatasLoading) && (
+          <Spinner position="absolute" color="teal" size="lg" top="50%" left="50%" transform="translate(-50%, -50%)" />
+        )}
       </Stack>
 
       {offerForDrawer && (
@@ -388,6 +521,65 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
           </Drawer>
         </>
       )}
+
+      <Modal isOpen={isAccessProgressModalOpen} onClose={cleanupAccessDataStreamProcess} closeOnEsc={false} closeOnOverlayClick={false}>
+        <ModalOverlay bg="#181818e0">
+          <ModalContent bg="#181818">
+            <ModalHeader>Data Access Unlock Progress</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody pb={6}>
+              <Stack spacing={5}>
+                <HStack>
+                  {(!unlockAccessProgress.s1 && <Spinner size="md" />) || <CheckCircleIcon w={6} h={6} />}
+                  <Text>Initiating handshake with Data Marshal</Text>
+                </HStack>
+
+                <HStack>
+                  {(!unlockAccessProgress.s2 && <Spinner size="md" />) || <CheckCircleIcon w={6} h={6} />}
+                  <Stack>
+                    <Text>Please sign transaction to complete handshake</Text>
+                    <Text fontSize="sm">Note: This will not use gas or submit any blockchain transactions</Text>
+                  </Stack>
+                </HStack>
+
+                <HStack>
+                  {(!unlockAccessProgress.s3 && <Spinner size="md" />) || <CheckCircleIcon w={6} h={6} />}
+                  <Text>Verifying data access rights to unlock Data Stream</Text>
+                </HStack>
+
+                {unlockAccessProgress.s1 && unlockAccessProgress.s2 && (
+                  <Stack border="solid .04rem" padding={3} borderRadius={5}>
+                    <Text fontSize="sm" lineHeight={1.7}>
+                      <InfoIcon boxSize={5} mr={1} />
+                      Popups are needed for the Data Marshal to give you access to Data Streams. If your browser is prompting you to allow popups, please select{" "}
+                      <b>Always allow pop-ups</b>
+                    </Text>
+                    <Image boxSize="250px" height="auto" m=".5rem auto 0 auto !important" src={imgGuidePopup} borderRadius={10} />
+                  </Stack>
+                )}
+
+                {errUnlockAccessGeneric && (
+                  <Alert status="error">
+                    <Stack>
+                      <AlertTitle fontSize="md">
+                        <AlertIcon mb={2} />
+                        Process Error
+                      </AlertTitle>
+                      {errUnlockAccessGeneric && <AlertDescription fontSize="md">{errUnlockAccessGeneric}</AlertDescription>}
+                      <CloseButton position="absolute" right="8px" top="8px" onClick={cleanupAccessDataStreamProcess} />
+                    </Stack>
+                  </Alert>
+                )}
+                {unlockAccessProgress.s1 && unlockAccessProgress.s2 && unlockAccessProgress.s3 && (
+                  <Button colorScheme="teal" variant="outline" onClick={cleanupAccessDataStreamProcess}>
+                    Close & Return
+                  </Button>
+                )}
+              </Stack>
+            </ModalBody>
+          </ModalContent>
+        </ModalOverlay>
+      </Modal>
     </>
   );
 };
