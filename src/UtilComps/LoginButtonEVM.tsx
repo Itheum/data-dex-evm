@@ -65,7 +65,7 @@ const appMetadata = {
   name: "Itheum Data DE",
   icon: ItheumIcon,
   logo: ItheumIcon,
-  description: "Itheum Data DEX on Astar Network",
+  description: "Itheum Data DEX (EVM) on Astar Network",
   recommendedInjectedWallets: [
     { name: "Talisman", url: "https://www.talisman.xyz/" },
     { name: "MetaMask", url: "https://metamask.io" },

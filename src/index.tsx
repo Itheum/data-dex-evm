@@ -1,25 +1,12 @@
 import React from "react";
 import { ChakraProvider, extendTheme } from "@chakra-ui/react";
-import * as Sentry from "@sentry/react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter as Router } from "react-router-dom";
 import Launcher from "./Launch/Launcher";
-import { getSentryProfile } from "./libs/util2";
 import reportWebVitals from "./reportWebVitals";
 import { ChainMetaContextProvider } from "./store/ChainMetaContext";
 import { UserContextProvider } from "./store/UserContext";
 import "../src/MultiversX/custom.css";
-
-if (process.env.NODE_ENV === "production") {
-  // Sentry.init({
-  //   dsn: process.env.REACT_APP_ENV_SENTRY_DSN,
-  //   // this is so we can use the environments filter in sentry to filter staging production vs actual production
-  //   environment: getSentryProfile(),
-  //   integrations: [new Sentry.BrowserTracing()],
-  //   // Performance Monitoring
-  //   tracesSampleRate: 1.0, // Capture 100% of the transactions, reduce in production!
-  // });
-}
 
 const breakpoints = {
   sm: "30em",

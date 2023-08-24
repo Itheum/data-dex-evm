@@ -4,10 +4,8 @@ import { Box, Text, Flex, HStack, Link, useColorMode } from "@chakra-ui/react";
 import { ApiNetworkProvider } from "@multiversx/sdk-network-providers/out";
 import { getApi, getNetworkProvider, getNetworkProviderCodification } from "MultiversX/api";
 import { useChainMeta } from "store/ChainMetaContext";
-import { getSentryProfile } from "../libs/util2";
 
 const dataDexVersion = process.env.REACT_APP_VERSION ? `v${process.env.REACT_APP_VERSION}` : "version number unknown";
-const nonProdEnv = `env:${getSentryProfile()}`;
 
 export default function () {
   const { colorMode } = useColorMode();
@@ -19,9 +17,7 @@ export default function () {
   return (
     <Box backgroundColor={colorMode === "light" ? "white" : "bgDark"} height="5rem" borderTop="solid .1rem" borderColor="teal.200">
       <Flex flexDirection="column" alignItems="center" justifyContent="center" height="100%">
-        <Text fontSize="xx-small">
-          {dataDexVersion} {nonProdEnv && <>{nonProdEnv}</>}
-        </Text>
+        <Text fontSize="xx-small">{dataDexVersion}</Text>
         <Text fontSize="xx-small">
           Network Provider: {isPublicNetworkProvider ? "Public" : "Private"} {isApiNetworkProvider ? "API" : "Gateway"}
         </Text>

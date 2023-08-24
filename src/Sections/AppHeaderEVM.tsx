@@ -194,7 +194,7 @@ const AppHeader = ({
             <HStack>
               <Image boxSize="48px" height="auto" src={colorMode === "light" ? logoSmlL : logoSmlD} alt="Itheum Data DEX" />
               <Heading display={{ base: "none", md: "block", xl: "block" }} size={"md"}>
-                Itheum Data DEX
+                Data DEX (EVM)
               </Heading>
             </HStack>
           </Link>
@@ -334,7 +334,7 @@ const AppHeader = ({
         <DrawerContent>
           <DrawerHeader borderBottomWidth={"1px"} display={"flex"} alignItems={"center"}>
             <Heading size={"sm"} onClick={onClose}>
-              Itheum Data DEX
+              Data DEX (EVM)
             </Heading>
             <DrawerCloseButton />
           </DrawerHeader>

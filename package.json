@@ -1,6 +1,6 @@
 {
   "name": "data-dex-evm",
-  "version": "0.2.0-alpha",
+  "version": "0.2.1-alpha",
   "description": "The Itheum Data DEX enables you to trade your personal data using web3 tech",
   "dependencies": {
     "@chakra-ui/icons": "2.0.18",
@@ -12,7 +12,6 @@
     "@multiversx/sdk-dapp": "2.11.2",
     "@multiversx/sdk-network-providers": "1.4.0",
     "@multiversx/sdk-transaction-decoder": "1.0.2",
-    "@sentry/react": "7.48.0",
     "@tanstack/match-sorter-utils": "8.8.4",
     "@tanstack/react-table": "8.8.5",
     "@testing-library/jest-dom": "5.16.5",
