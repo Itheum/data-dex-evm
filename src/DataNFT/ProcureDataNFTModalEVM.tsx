@@ -43,6 +43,7 @@ export type ProcureAccessModalProps = {
   item: any;
   setMenuItem: any;
   onRefreshTokenBalance: any;
+  onCompletion: any;
 };
 
 export default function ProcureDataNFTModalEVM(props: ProcureAccessModalProps) {
@@ -73,10 +74,13 @@ export default function ProcureDataNFTModalEVM(props: ProcureAccessModalProps) {
 
   useEffect(() => {
     const priceInInt: number = parseInt(props.nftData.feeInTokens.toString(), 10);
-    const _royalties = (priceInInt * props.nftData.royalties) / 100;
-    const _totalPriceForAllowance: number = priceInInt + _royalties + (priceInInt / 100) * 2;
 
-    setTotalPriceForAllowance(_totalPriceForAllowance); // TODO: 15.45 is shown as 15.4 (we need to be more accurate)
+    const _royalties = (priceInInt * props.nftData.royalties) / 100;
+    const _buyerFee = (priceInInt * (props.buyerFee ? props.buyerFee : 2)) / 100;
+    const _sum = _royalties + _buyerFee;
+    const _totalPriceForAllowance: number = Math.round(priceInInt + _sum);
+
+    setTotalPriceForAllowance(_totalPriceForAllowance);
   }, [props]);
 
   const web3_approve = async () => {
@@ -95,25 +99,27 @@ export default function ProcureDataNFTModalEVM(props: ProcureAccessModalProps) {
 
       try {
         // makes it like 10.2 or 10.0 or 15.4. But for values like 15.45 it also becomes 15.4 so the allowance is too less
+
+        ///on the last update we only round up with 0.01
+
         // ... so let's round UP... this is not the best option and not good for security but for now we can do it.
         // ... TODO: HAS to be fixed before any mainnet release but only taking allowance exactly for what is needed in decimal points
-        const formattedAllowanceVal = itheumTokenRoundUtilExtended(totalPriceForAllowance, 18, ethers.BigNumber, true);
 
+        const formattedAllowanceVal = itheumTokenRoundUtilExtended(totalPriceForAllowance, 18, ethers.BigNumber, true, 2); // rounded on last 2 decimals
         let roundedUpAllowanceVal = -1;
 
         if (!Array.isArray(formattedAllowanceVal)) {
           // itheumTokenRoundUtilExtended can return an array in some config but n/a here
-          roundedUpAllowanceVal = Math.ceil(parseFloat(formattedAllowanceVal)); // 15.4 becomes 16
+          roundedUpAllowanceVal = parseFloat(formattedAllowanceVal) + 0.01; // 15.45 becomes 15.46;  15.457 => 15.46
         }
 
-        if (Number.isNaN(roundedUpAllowanceVal) || roundedUpAllowanceVal < 1) {
+        if (Number.isNaN(roundedUpAllowanceVal) || roundedUpAllowanceVal < 0.01) {
           setErrAllowanceStreamGeneric(new Error("ER-X-1: There is an issue calculating allowance figure."));
           return;
         }
+        tokenInPrecision = ethers.utils.parseUnits(`${roundedUpAllowanceVal}`, decimals).toHexString();
 
-        tokenInPrecision = ethers.utils.parseUnits(`${roundedUpAllowanceVal}.0`, decimals).toHexString();
-
-        console.log("Asking for allowance for ", `${roundedUpAllowanceVal}.0`);
+        console.log("Asking for allowance for ", `${roundedUpAllowanceVal}`);
       } catch (e) {
         setErrAllowanceStreamGeneric(new Error("ER-X-2: There is an issue calculating allowance figure. Check console."));
         console.log("ER-X-2 : S ------------------");
@@ -205,7 +211,6 @@ export default function ProcureDataNFTModalEVM(props: ProcureAccessModalProps) {
     setErrDataNFTStreamGeneric(null);
     setTxNFTHash("");
     setTxNFTConfirmation(0);
-
     props.onClose();
   }
 
@@ -231,11 +236,7 @@ export default function ProcureDataNFTModalEVM(props: ProcureAccessModalProps) {
 
             <Box>
               <Flex fontSize="md" mt="2">
-                <Box w="140px">How many</Box>
-                <Box>: {props.amount ? props.amount : 1}</Box>
-              </Flex>
-              <Flex fontSize="md" mt="2">
-                <Box w="140px">Unlock Fee (per NFT)</Box>
+                <Box w="140px">Unlock Fee </Box>
                 <Box>: {itheumTokenRoundUtilExtended(props.nftData.feeInTokens, 18, ethers.BigNumber, true)} ITHEUM</Box>
               </Flex>
               <Flex>
@@ -246,8 +247,8 @@ export default function ProcureDataNFTModalEVM(props: ProcureAccessModalProps) {
                 )}
               </Flex>
               <Flex fontSize="md" mt="2">
-                <Box w="140px">Buyer Tax (per NFT)</Box>
-                <Box>: 2%</Box>
+                <Box w="140px">Buyer Tax </Box>
+                <Box>: {props.buyerFee ? props.buyerFee : "2"}% </Box>
               </Flex>
               <Flex fontSize="md" mt="2">
                 <Box w="140px">Creator Royalty</Box>
@@ -279,7 +280,7 @@ export default function ProcureDataNFTModalEVM(props: ProcureAccessModalProps) {
 
               {txNFTHash && (
                 <Link fontSize="sm" href={txNFTHash} isExternal>
-                  Procure On-Chain TX <ExternalLinkIcon mx="2px" />
+                  Procure On-Chain TX <ExternalLinkIcon mx="2px" mt="-1px" />
                 </Link>
               )}
 
@@ -355,7 +356,13 @@ export default function ProcureDataNFTModalEVM(props: ProcureAccessModalProps) {
                     }}>
                     Visit your Data NFT Wallet to see it!
                   </Button>
-                  <Button colorScheme="teal" variant="outline" onClick={() => cleanupAndClose()}>
+                  <Button
+                    colorScheme="teal"
+                    variant="outline"
+                    onClick={() => {
+                      props.onCompletion();
+                      cleanupAndClose();
+                    }}>
                     Close & Return
                   </Button>
                 </HStack>
