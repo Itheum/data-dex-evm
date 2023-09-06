@@ -601,7 +601,7 @@ export const itheumTokenRoundUtilExtended = (
     const _balanceWeiString = balance.toString(); // 10200000000000000000
     const _balanceWeiBN = BigNumber.from(_balanceWeiString);
 
-    const _decimals = 18;
+    const _decimals = decimals;
     const _decimalsBN = BigNumber.from(_decimals);
     const _divisor = BigNumber.from(10).pow(_decimalsBN);
 

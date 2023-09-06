@@ -1,5 +1,5 @@
 import React, { FC, useEffect, useState } from "react";
-import { CheckCircleIcon, ExternalLinkIcon, InfoIcon } from "@chakra-ui/icons";
+import { CheckCircleIcon, InfoIcon } from "@chakra-ui/icons";
 
 import {
   Flex,
@@ -48,15 +48,14 @@ import { createNftId } from "libs/util2";
 import { DataNftMetadataType, ItemType, MarketplaceRequirementsType, OfferType, OfferTypeEVM } from "MultiversX/typesEVM";
 import { useChainMeta } from "store/ChainMetaContext";
 import { CustomPagination } from "./CustomPagination";
-import MarketplaceLowerCard from "./MarketplaceLowerCardEVM";
 import MyListedDataLowerCard from "./MyListedDataLowerCard";
 import UpperCardComponentEVM from "../UtilComps/UpperCardComponentEVM";
 import useThrottle from "../UtilComps/UseThrottle";
 
 import { ethers } from "ethers";
 import { ABIS } from "../EVM/ABIs";
-import WalletDataNFTEVM from "./WalletDataNFTEVM";
-import { sleep } from "libs/util";
+
+import MarketplaceLowerCardEVM from "./MarketplaceLowerCardEVM";
 
 interface PropsType {
   tabState: number; // 1 for "Public Marketplace", 2 for "My Data NFTs",
@@ -64,11 +63,14 @@ interface PropsType {
   onRefreshTokenBalance: any;
 }
 
+/// refresh the market place when a hasPendingTransaction changes
+
 export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTokenBalance }) => {
   const { colorMode } = useColorMode();
   const navigate = useNavigate();
   const { chainMeta: _chainMeta } = useChainMeta() as any;
-  const { hasPendingTransactions, pendingTransactions } = useGetPendingTransactions();
+  const { hasPendingTransactions, pendingTransactions } = useGetPendingTransactions(); /// DOES NOT WORK IN EVM
+  const [shouldFetchTheDataNFT, setShouldFetchTheDataNFT] = useState(false);
   const [itheumPrice, setItheumPrice] = useState<number | undefined>();
   const [loadingOffers, setLoadingOffers] = useState<boolean>(false);
   const [selectedOfferIndex, setSelectedOfferIndex] = useState<number>(-1); // no selection
@@ -91,7 +93,6 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
   const { isOpen: isDrawerOpenTradeStream, onOpen: onOpenDrawerTradeStream, onClose: onCloseDrawerTradeStream } = useDisclosure();
 
   ///view data button
-
   const { isOpen: isAccessProgressModalOpen, onOpen: onAccessProgressModalOpen, onClose: onAccessProgressModalClose } = useDisclosure();
   const [unlockAccessProgress, setUnlockAccessProgress] = useState({
     s1: 0,
@@ -100,43 +101,48 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
   });
   const [errUnlockAccessGeneric, setErrUnlockAccessGeneric] = useState<string>("");
 
-  const accessDataStream = async (dataMarshal: string, NFTId: string, dataStream: string) => {
-    /*
-      1) get a nonce from the data marshal (s1)
-      2) get user to sign the nonce and obtain signature (s2)
-      3) send the signature for verification from the marshal and open stream in new window (s3)
-    */
+  /// is not used
+  // const accessDataStream = async (dataMarshal: string, NFTId: string, dataStream: string) => {
+  //   /*
+  //     1) get a nonce from the data marshal (s1)
+  //     2) get user to sign the nonce and obtain signature (s2)
+  //     3) send the signature for verification from the marshal and open stream in new window (s3)
+  //   */
 
-    onAccessProgressModalOpen();
+  //   onAccessProgressModalOpen();
 
-    setUnlockAccessProgress((prevProgress) => ({ ...prevProgress, s1: 1 }));
+  //   setUnlockAccessProgress((prevProgress) => ({ ...prevProgress, s1: 1 }));
 
-    await sleep(3);
+  //   await sleep(3);
 
-    setUnlockAccessProgress((prevProgress) => ({
-      ...prevProgress,
-      s2: 1,
-    }));
+  //   setUnlockAccessProgress((prevProgress) => ({
+  //     ...prevProgress,
+  //     s2: 1,
+  //   }));
 
-    await sleep(3);
+  //   await sleep(3);
 
-    // auto download the file without ever exposing the url
-    const link = document.createElement("a");
-    link.target = "_blank";
-    link.setAttribute("target", "_blank");
-    link.href = dataStream; /// TODO FIND A WAY TO GET THE DATASTREAM,preview,marshal  FROM API or smart contract
-    link.dispatchEvent(new MouseEvent("click"));
+  //   // auto download the file without ever exposing the url
+  //   const link = document.createElement("a");
+  //   link.target = "_blank";
+  //   link.setAttribute("target", "_blank");
+  //   link.href = dataStream; /// TODO FIND A WAY TO GET THE DATASTREAM,preview,marshal  FROM API or smart contract
+  //   link.dispatchEvent(new MouseEvent("click"));
 
-    setUnlockAccessProgress((prevProgress) => ({
-      ...prevProgress,
-      s3: 1,
-    }));
-  };
+  //   setUnlockAccessProgress((prevProgress) => ({
+  //     ...prevProgress,
+  //     s3: 1,
+  //   }));
+  // };
 
   const cleanupAccessDataStreamProcess = () => {
     setUnlockAccessProgress({ s1: 0, s2: 0, s3: 0 });
     setErrUnlockAccessGeneric("");
     onAccessProgressModalClose();
+  };
+
+  const onProcureModalClose = () => {
+    setShouldFetchTheDataNFT(!shouldFetchTheDataNFT);
   };
 
   // pagination
@@ -171,7 +177,6 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
       setPageIndex(newPageIndex);
     }
   });
-
   useEffect(() => {
     (async () => {
       if (!_chainMeta.networkId) return;
@@ -210,7 +215,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
           mergeSmartContractMetaData(_tokenIdAry, res.items, _dataNfts);
         });
     })();
-  }, [tabState, hasPendingTransactions, _chainMeta.networkId]);
+  }, [tabState, hasPendingTransactions, _chainMeta.networkId, shouldFetchTheDataNFT]);
 
   function mergeSmartContractMetaData(_tokenIdAry: any, _allItems: any, _dataNfts: any) {
     // use the list of token IDs to get all the other needed details (price, royalty etc) from the smart contract
@@ -227,7 +232,6 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
       }, {});
 
       const _metadatas: DataNftMetadataType[] = [];
-
       for (let i = 0; i < _allItems.length; i++) {
         ///if we are on my page I only want the metadatas where the logged in address is owner of
         if (
@@ -244,7 +248,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
             dataMarshal: "", //now we are using this function to get that data, but only for a certain address:  getNftsOfACollectionForAnAddress
             tokenName: "",
             creator: "", // we don't know who the creator is -- this info only comes via Covalent API for now
-            creationTime: new Date(), // we don't know who the creator is -- this info only comes via Covalent API for now
+            creationTime: new Date(), // we don't know the creation time  -- this info only comes via Covalent API for now
             supply: 1,
             balance: 1,
             description: _allItems[i].description,
@@ -258,7 +262,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
           });
         }
       }
-
+      ///TODO Investigate more here
       setNftMetadatas(_metadatas);
       setNftMetadatasLoading(false);
 
@@ -270,6 +274,7 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
       } else {
         setFilteredItems(forSaleItems);
       }
+      setOffers(_dataNfts);
       // end loading offers
       setLoadingOffers(false);
     });
@@ -376,56 +381,41 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                     justifyItems={"center"}>
                     {offers.length > 0 &&
                       currentPageItems?.map((item, index) => (
-                        <UpperCardComponentEVM
-                          key={index}
-                          nftImageLoading={oneNFTImgLoaded && !loadingOffers}
-                          imageUrl={currentPageMetadatas[index]?.nftImgUrl || ""}
-                          setNftImageLoaded={setOneNFTImgLoaded}
-                          nftMetadatas={currentPageMetadatas}
-                          marketRequirements={marketRequirements}
-                          item={item}
-                          userData={userData}
-                          index={index}
-                          marketFreezedNonces={marketFreezedNonces}
-                          openNftDetailsDrawer={openNftDetailsDrawer}
-                          itheumPrice={itheumPrice}>
-                          {location.pathname.includes(marketplace) &&
-                          currentPageMetadatas.length > 0 &&
-                          !loadingOffers &&
-                          !nftMetadatasLoading &&
-                          !(_chainMeta.loggedInAddress && _chainMeta.loggedInAddress === item?.owner) ? ( // not owner
-                            <HStack mt="30px">
-                              <Button
-                                size="sm"
-                                colorScheme="teal"
-                                w="full"
-                                onClick={() => {
-                                  accessDataStream(
-                                    currentPageMetadatas[index]?.dataMarshal,
-                                    currentPageMetadatas[index]?.id,
-                                    currentPageMetadatas[index]?.dataStream
-                                  );
-                                }}>
-                                View Data
-                              </Button>
-                              <Button
-                                size="sm"
-                                colorScheme="teal"
-                                w="full"
-                                variant="outline"
-                                onClick={() => {
-                                  console.log("THE PREVIEW " + item.dataPreview);
-                                  window.open(item.dataPreview);
-                                }}>
-                                <Text py={3} color={colorMode === "dark" ? "white" : "black"}>
-                                  Preview Data
-                                </Text>
-                              </Button>
-                            </HStack>
-                          ) : (
-                            <></>
-                          )}
-                        </UpperCardComponentEVM>
+                        <>
+                          <UpperCardComponentEVM
+                            key={index}
+                            nftImageLoading={oneNFTImgLoaded && !loadingOffers}
+                            imageUrl={currentPageMetadatas[index]?.nftImgUrl || ""}
+                            setNftImageLoaded={setOneNFTImgLoaded}
+                            nftMetadatas={currentPageMetadatas}
+                            marketRequirements={marketRequirements}
+                            item={item}
+                            userData={userData}
+                            index={index}
+                            marketFreezedNonces={marketFreezedNonces}
+                            openNftDetailsDrawer={openNftDetailsDrawer}
+                            itheumPrice={itheumPrice}>
+                            {location.pathname.includes(marketplace) &&
+                            currentPageMetadatas.length > 0 &&
+                            !loadingOffers &&
+                            !nftMetadatasLoading &&
+                            !(_chainMeta.loggedInAddress && _chainMeta.loggedInAddress === item?.owner) ? ( // not owner
+                              <MarketplaceLowerCardEVM
+                                nftMetadatas={currentPageMetadatas}
+                                index={index}
+                                item={item}
+                                offers={offers}
+                                itheumPrice={itheumPrice}
+                                marketRequirements={marketRequirements}
+                                setMenuItem={setMenuItem}
+                                onRefreshTokenBalance={onRefreshTokenBalance}
+                                onCompletion={() => setShouldFetchTheDataNFT(!shouldFetchTheDataNFT)}
+                              />
+                            ) : (
+                              <></>
+                            )}
+                          </UpperCardComponentEVM>
+                        </>
                       ))}
                   </SimpleGrid>
                 )}
@@ -442,34 +432,36 @@ export const Marketplace: FC<PropsType> = ({ tabState, setMenuItem, onRefreshTok
                     justifyItems={"center"}>
                     {offers.length > 0 &&
                       currentPageItems?.map((item, index) => (
-                        <UpperCardComponentEVM
-                          key={index}
-                          nftImageLoading={oneNFTImgLoaded && !loadingOffers}
-                          imageUrl={currentPageMetadatas[index]?.nftImgUrl || ""}
-                          setNftImageLoaded={setOneNFTImgLoaded}
-                          nftMetadatas={currentPageMetadatas}
-                          marketRequirements={marketRequirements}
-                          item={item}
-                          userData={userData}
-                          index={index}
-                          marketFreezedNonces={marketFreezedNonces}
-                          openNftDetailsDrawer={openNftDetailsDrawer}
-                          itheumPrice={itheumPrice}>
-                          {location.pathname.includes(marketplace + "/my") &&
-                            currentPageMetadatas.length > 0 &&
-                            !loadingOffers &&
-                            !nftMetadatasLoading &&
-                            _chainMeta.loggedInAddress && (
-                              <MyListedDataLowerCard
-                                index={index}
-                                offers={currentPageItems}
-                                nftMetadatas={currentPageMetadatas}
-                                itheumPrice={itheumPrice}
-                                marketRequirements={marketRequirements}
-                                maxPaymentFeeMap={maxPaymentFeeMap}
-                              />
-                            )}
-                        </UpperCardComponentEVM>
+                        <>
+                          <UpperCardComponentEVM
+                            key={index}
+                            nftImageLoading={oneNFTImgLoaded && !loadingOffers}
+                            imageUrl={currentPageMetadatas[index]?.nftImgUrl || ""}
+                            setNftImageLoaded={setOneNFTImgLoaded}
+                            nftMetadatas={currentPageMetadatas}
+                            marketRequirements={marketRequirements}
+                            item={item}
+                            userData={userData}
+                            index={index}
+                            marketFreezedNonces={marketFreezedNonces}
+                            openNftDetailsDrawer={openNftDetailsDrawer}
+                            itheumPrice={itheumPrice}>
+                            {location.pathname.includes(marketplace + "/my") &&
+                              currentPageMetadatas.length > 0 &&
+                              !loadingOffers &&
+                              !nftMetadatasLoading &&
+                              _chainMeta.loggedInAddress && (
+                                <MyListedDataLowerCard
+                                  index={index}
+                                  offers={currentPageItems}
+                                  nftMetadatas={currentPageMetadatas}
+                                  itheumPrice={itheumPrice}
+                                  marketRequirements={marketRequirements}
+                                  maxPaymentFeeMap={maxPaymentFeeMap}
+                                />
+                              )}
+                          </UpperCardComponentEVM>
+                        </>
                       ))}
                   </SimpleGrid>
                 )}
